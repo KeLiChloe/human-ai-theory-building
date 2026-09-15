@@ -1,5 +1,7 @@
 # human-ai-theory-building
 
+Code accompanying the paper *AI Theory Building: Artificial intelligences and human scientists exhibit complementary strengths in theory building*.
+
 - **survey-analysis** — Analysis of the collected survey data.
 - **machine-learning-analysis** — Random Forest and logistic regression code for predicting inequality mentions in academic discourses.
 
