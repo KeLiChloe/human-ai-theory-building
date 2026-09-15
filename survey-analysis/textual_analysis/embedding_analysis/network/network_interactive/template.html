@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Semantic Network</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+  <style>
+    :root {
+      --bg-deep: #ffffff;
+      --bg-mid: #f8fafc;
+      --surface: #ffffff;
+      --surface-elevated: #f8fafc;
+      --stroke: #e2e8f0;
+      --stroke-light: #cbd5e1;
+      --text: #0f172a;
+      --text-soft: #334155;
+      --muted: #64748b;
+      --accent: #2563eb;
+      --accent-dim: rgba(37, 99, 235, 0.12);
+      --gold: #92702a;
+      --sidebar-w: min(440px, 40vw);
+      --radius: 20px;
+      --radius-sm: 12px;
+      --shadow-lg: 0 4px 24px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.04);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      font-family: "DM Sans", system-ui, sans-serif;
+      color: var(--text);
+      background: var(--bg-deep);
+      overflow: hidden;
+    }
+
+    __SIDEBAR_CSS__
+
+    .app {
+      position: relative;
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      height: 100%;
+      min-height: 0;
+    }
+
+    header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1.5rem;
+      padding: 1.25rem 1.75rem 1.1rem;
+      border-bottom: 1px solid var(--stroke);
+      background: #ffffff;
+    }
+
+    .title-wrap h1 {
+      margin: 0;
+      font-family: "Instrument Serif", Georgia, serif;
+      font-size: clamp(1.65rem, 2.5vw, 2.35rem);
+      font-weight: 400;
+      line-height: 1.1;
+      letter-spacing: -0.01em;
+      color: var(--text);
+    }
+
+    .title-wrap p {
+      margin: 0.5rem 0 0;
+      color: var(--text-soft);
+      font-size: 0.92rem;
+      font-weight: 400;
+      letter-spacing: 0.01em;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      justify-content: flex-end;
+      align-items: flex-start;
+    }
+
+    .badge {
+      border: 1px solid var(--stroke-light);
+      background: #f8fafc;
+      border-radius: 999px;
+      padding: 0.48rem 0.9rem;
+      font-size: 0.76rem;
+      color: var(--muted);
+      white-space: nowrap;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+
+    .badge strong { color: var(--text); font-weight: 600; }
+    .badge.accent {
+      border-color: #bfdbfe;
+      background: #eff6ff;
+      color: var(--text-soft);
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      padding: 0.7rem 1.75rem;
+      border-bottom: 1px solid var(--stroke);
+      background: #f8fafc;
+    }
+
+    .search {
+      flex: 1;
+      max-width: 380px;
+      position: relative;
+    }
+
+    .search input {
+      width: 100%;
+      border: 1px solid var(--stroke-light);
+      background: #ffffff;
+      color: var(--text);
+      border-radius: var(--radius-sm);
+      padding: 0.68rem 0.95rem 0.68rem 2.4rem;
+      font: inherit;
+      font-size: 0.88rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    }
+
+    .search input::placeholder { color: var(--muted); }
+
+    .search input:focus {
+      border-color: #93c5fd;
+      background: #ffffff;
+      box-shadow: 0 0 0 3px var(--accent-dim);
+    }
+
+    .search svg {
+      position: absolute;
+      left: 0.9rem;
+      top: 50%;
+      transform: translateY(-50%);
+      opacity: 0.45;
+      color: var(--muted);
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 0.8rem;
+      letter-spacing: 0.02em;
+      padding: 0.35rem 0.75rem;
+      border-radius: 999px;
+      border: 1px solid var(--stroke);
+      background: #ffffff;
+    }
+
+    .main {
+      display: grid;
+      grid-template-columns: 1fr var(--sidebar-w);
+      min-height: 0;
+    }
+
+    .canvas-wrap {
+      overflow: auto;
+      padding: 1rem 1.25rem 1.5rem 1.75rem;
+    }
+
+    .panels {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.15rem;
+      align-content: start;
+    }
+
+    .panel-card {
+      border: 1px solid var(--stroke-light);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .panel-card.active {
+      border-color: #93c5fd;
+      box-shadow:
+        0 0 0 1px rgba(37, 99, 235, 0.12),
+        0 12px 32px rgba(15, 23, 42, 0.1);
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.85rem 1.1rem 0.7rem;
+      border-bottom: 1px solid var(--stroke);
+      background: #f8fafc;
+    }
+
+    .panel-head h2 {
+      margin: 0;
+      font-size: 0.88rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      color: var(--text-soft);
+    }
+
+    .panel-head .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      box-shadow: 0 0 12px currentColor;
+    }
+
+    .panel-svg {
+      width: 100%;
+      aspect-ratio: 1;
+      display: block;
+      background: #fafbfc;
+    }
+
+    .link {
+      stroke: #6b7c8f;
+      stroke-linecap: round;
+      pointer-events: none;
+      transition: stroke-opacity 0.2s, stroke-width 0.2s;
+    }
+
+    .node { cursor: pointer; }
+    .node .hit { fill: transparent; stroke: none; pointer-events: all; }
+    .node .shell, .node .core { pointer-events: none; }
+
+    .node circle.shell {
+      fill: rgba(15, 23, 42, 0.04);
+      stroke-width: 1.5px;
+    }
+
+    .node circle.core {
+      stroke: rgba(255, 255, 255, 0.95);
+      stroke-width: 1.2px;
+      transition: filter 0.15s ease;
+    }
+
+    .node.faded { opacity: 0.2; }
+    .link.faded { stroke-opacity: 0.08; }
+    .node.focused circle.core { filter: drop-shadow(0 0 6px rgba(37, 99, 235, 0.35)); }
+    .link.highlight {
+      stroke: var(--accent);
+      stroke-opacity: 0.85;
+      stroke-width: 2.2px;
+    }
+
+    .detail-aside {
+      border-left: 1px solid var(--stroke-light);
+      background: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      box-shadow: -4px 0 16px rgba(15, 23, 42, 0.04);
+    }
+
+    .detail-empty {
+      margin: auto;
+      text-align: center;
+      padding: 2.5rem 2rem;
+      color: var(--muted);
+      max-width: 28ch;
+      line-height: 1.6;
+      font-size: 0.9rem;
+    }
+
+    .detail-empty .orb {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 1.25rem;
+      border-radius: 50%;
+      border: 1px solid var(--stroke-light);
+      background: radial-gradient(circle at 35% 30%, rgba(37,99,235,0.12), transparent 60%);
+      position: relative;
+    }
+    .detail-empty .orb::after {
+      content: "";
+      position: absolute;
+      inset: 18px;
+      border-radius: 50%;
+      border: 1px dashed rgba(37,99,235,0.25);
+    }
+
+    .detail {
+      display: none;
+      flex-direction: column;
+      min-height: 0;
+      height: 100%;
+    }
+
+    .detail.visible { display: flex; }
+
+    .detail-header {
+      padding: 1.5rem 1.5rem 1rem;
+      border-bottom: 1px solid var(--stroke);
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    .detail-header::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 1.25rem;
+      bottom: 1rem;
+      width: 3px;
+      border-radius: 0 2px 2px 0;
+      background: var(--detail-accent, var(--accent));
+      box-shadow: 0 0 8px rgba(37, 99, 235, 0.2);
+    }
+
+    .detail-header .group-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      margin-bottom: 0.6rem;
+      padding-left: 0.75rem;
+    }
+
+    .detail-header h3 {
+      margin: 0;
+      padding-left: 0.75rem;
+      font-family: "Instrument Serif", Georgia, serif;
+      font-size: 1.75rem;
+      line-height: 1.15;
+      font-weight: 400;
+      color: var(--text);
+    }
+
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      margin-top: 1rem;
+      padding-left: 0.75rem;
+    }
+
+    .stat {
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius-sm);
+      padding: 0.4rem 0.7rem;
+      font-size: 0.74rem;
+      color: var(--muted);
+      background: #ffffff;
+    }
+
+    .stat b { color: var(--text-soft); font-weight: 600; }
+
+    .detail-body {
+      padding: 1.15rem 1.5rem 1.75rem;
+      overflow: auto;
+      flex: 1;
+    }
+
+    .detail-body h4 {
+      margin: 0 0 0.75rem;
+      font-size: 0.72rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .explanation {
+      font-size: 0.93rem;
+      line-height: 1.72;
+      color: var(--text-soft);
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <nav id="site-sidebar" class="site-sidebar" aria-label="Network catalog"></nav>
+    <div class="shell-main">
+  <div class="app">
+    <header>
+      <div class="title-wrap">
+        <h1 id="page-title">Semantic Network</h1>
+        <p id="page-subtitle"></p>
+      </div>
+      <div class="meta">
+        <div class="badge">cosine ≥ <strong id="threshold-val"></strong></div>
+        <div class="badge"><strong id="quantile-val"></strong> percentile</div>
+        <div class="badge accent" id="variant-badge"></div>
+      </div>
+    </header>
+
+    <div class="toolbar">
+      <label class="search">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+        <input id="search" type="search" placeholder="Search by contributor ID…" autocomplete="off" />
+      </label>
+      <div class="hint">Hover a node; click to pin.</div>
+    </div>
+
+    <div class="main">
+      <div class="canvas-wrap" id="canvas-wrap">
+        <div class="panels" id="panels"></div>
+      </div>
+      <aside class="detail-aside">
+        <div class="detail-empty" id="detail-empty">
+          <div class="orb"></div>
+          <div>Hover any node to reveal the contributor ID and their theoretical explanation.</div>
+        </div>
+        <div class="detail" id="detail">
+          <div class="detail-header" id="detail-header">
+            <div class="group-pill"><span class="dot" id="detail-dot"></span><span id="detail-group"></span></div>
+            <h3 id="detail-name"></h3>
+            <div class="stats">
+              <div class="stat">Neighbors <b id="detail-neighbors"></b></div>
+              <div class="stat">Words <b id="detail-words"></b></div>
+            </div>
+          </div>
+          <div class="detail-body">
+            <h4>Theory explanation</h4>
+            <div class="explanation" id="detail-explanation"></div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+    </div>
+  </div>
+
+  <script id="network-data" type="application/json">__NETWORK_DATA_JSON__</script>
+  <script id="nav-data" type="application/json">__NAV_ENTRIES_JSON__</script>
+  <script>__SIDEBAR_JS__</script>
+  <script>
+    buildNetworkSidebar(JSON.parse(document.getElementById("nav-data").textContent));
+
+    const DATA = JSON.parse(document.getElementById("network-data").textContent);
+    const SCALE = 1000;
+    const PANEL_PAD = 40;
+
+    document.getElementById("page-title").textContent = DATA.title;
+    document.getElementById("page-subtitle").textContent = DATA.subtitle;
+    document.getElementById("threshold-val").textContent = DATA.threshold.toFixed(3);
+    document.getElementById("quantile-val").textContent = DATA.threshold_quantile_pct + "th";
+    document.getElementById("variant-badge").textContent = DATA.collapsed
+      ? "Two groups (Humans and GenAI)"
+      : "Three groups (PhDs, Senior Scientists, GenAI)";
+
+    const panelsEl = document.getElementById("panels");
+    const detailEl = document.getElementById("detail");
+    const detailHeader = document.getElementById("detail-header");
+    const detailEmpty = document.getElementById("detail-empty");
+    const panelRoots = new Map();
+    let pinnedNode = null;
+    let hoveredNode = null;
+
+    function nodeRadius(degree) {
+      return 9.5 + Math.min(degree, 8) * 1.5;
+    }
+
+    function hitRadius(degree) {
+      return nodeRadius(degree) + 12;
+    }
+
+    function showDetail(node, panel) {
+      detailEmpty.style.display = "none";
+      detailEl.classList.add("visible");
+      detailHeader.style.setProperty("--detail-accent", panel.color);
+      document.getElementById("detail-dot").style.color = panel.color;
+      document.getElementById("detail-group").textContent = panel.title;
+      document.getElementById("detail-name").textContent = node.name;
+      document.getElementById("detail-neighbors").textContent = node.degree;
+      document.getElementById("detail-words").textContent = node.words ?? "—";
+      document.getElementById("detail-explanation").textContent =
+        node.explanation || "(No theory text available for this participant.)";
+    }
+
+    function hideDetail() {
+      if (pinnedNode) return;
+      detailEl.classList.remove("visible");
+      detailEmpty.style.display = "block";
+    }
+
+    function resetAllHighlights() {
+      panelRoots.forEach(root => {
+        root.selectAll(".node").classed("focused faded", false);
+        root.selectAll(".link").classed("highlight faded", false);
+      });
+      document.querySelectorAll(".panel-card").forEach(card => {
+        card.classList.remove("active");
+      });
+    }
+
+    function highlightNode(nodeId, panelId) {
+      resetAllHighlights();
+      const root = panelRoots.get(panelId);
+      const card = document.querySelector(`.panel-card[data-panel-id="${panelId}"]`);
+      if (!root || !card) return;
+
+      card.classList.add("active");
+      const neighborIds = new Set([nodeId]);
+      root.selectAll(".link").each(d => {
+        if (d.source === nodeId || d.target === nodeId) {
+          neighborIds.add(d.source);
+          neighborIds.add(d.target);
+        }
+      });
+
+      root.selectAll(".node")
+        .classed("focused", d => d.id === nodeId)
+        .classed("faded", d => !neighborIds.has(d.id));
+      root.selectAll(".link")
+        .classed("highlight", d => d.source === nodeId || d.target === nodeId)
+        .classed("faded", d => d.source !== nodeId && d.target !== nodeId);
+    }
+
+    function activateNode(node, panel) {
+      hoveredNode = node;
+      highlightNode(node.id, panel.id);
+      showDetail(node, panel);
+    }
+
+    function deactivateNode() {
+      if (pinnedNode) return;
+      hoveredNode = null;
+      hideDetail();
+      resetAllHighlights();
+    }
+
+    function addPanelGrid(svg, panelId) {
+      const patId = `grid-${panelId}`;
+      const defs = svg.append("defs");
+      defs.append("pattern")
+        .attr("id", patId)
+        .attr("width", 28).attr("height", 28)
+        .attr("patternUnits", "userSpaceOnUse")
+        .append("circle")
+        .attr("cx", 1).attr("cy", 1).attr("r", 0.55)
+        .attr("fill", "rgba(15,23,42,0.06)");
+      svg.insert("rect", ":first-child")
+        .attr("width", SCALE).attr("height", SCALE)
+        .attr("fill", `url(#${patId})`);
+    }
+
+    DATA.panels.forEach(panel => {
+      const nodeById = new Map(panel.nodes.map(n => [n.id, n]));
+
+      const card = document.createElement("div");
+      card.className = "panel-card";
+      card.dataset.panelId = panel.id;
+
+      const head = document.createElement("div");
+      head.className = "panel-head";
+      head.innerHTML = `<h2>${panel.title}</h2><span class="dot" style="color:${panel.color}"></span>`;
+      card.appendChild(head);
+
+      const svg = d3.select(card).append("svg")
+        .attr("class", "panel-svg")
+        .attr("viewBox", `0 0 ${SCALE} ${SCALE}`);
+
+      addPanelGrid(svg, panel.id.replace(/\W/g, "_"));
+      const root = svg.append("g");
+      panelRoots.set(panel.id, root);
+
+      const x = d3.scaleLinear().domain([0, 1]).range([PANEL_PAD, SCALE - PANEL_PAD]);
+      const y = d3.scaleLinear().domain([0, 1]).range([SCALE - PANEL_PAD, PANEL_PAD]);
+
+      const links = panel.links.map(l => ({ ...l, panelId: panel.id }));
+      const nodes = panel.nodes.map(n => ({ ...n, panelId: panel.id }));
+
+      root.selectAll(".link")
+        .data(links)
+        .join("line")
+        .attr("class", "link")
+        .attr("stroke-opacity", 0.34)
+        .attr("stroke-width", 1.2)
+        .attr("x1", d => x(nodeById.get(d.source).x))
+        .attr("y1", d => y(nodeById.get(d.source).y))
+        .attr("x2", d => x(nodeById.get(d.target).x))
+        .attr("y2", d => y(nodeById.get(d.target).y));
+
+      const nodeSel = root.selectAll(".node")
+        .data(nodes)
+        .join("g")
+        .attr("class", "node")
+        .attr("transform", d => `translate(${x(d.x)},${y(d.y)})`);
+
+      nodeSel.append("circle")
+        .attr("class", "hit")
+        .attr("r", d => hitRadius(d.degree));
+
+      nodeSel.append("circle")
+        .attr("class", "shell")
+        .attr("r", d => nodeRadius(d.degree) + 4)
+        .attr("stroke", panel.color)
+        .attr("stroke-opacity", 0.35);
+
+      nodeSel.append("circle")
+        .attr("class", "core")
+        .attr("r", d => nodeRadius(d.degree))
+        .attr("fill", panel.color)
+        .attr("fill-opacity", 0.92);
+
+      nodeSel
+        .on("pointerenter", (event, d) => {
+          if (pinnedNode && pinnedNode.id !== d.id) return;
+          activateNode(d, panel);
+        })
+        .on("pointerleave", (event) => {
+          if (pinnedNode) return;
+          const related = event.relatedTarget;
+          if (related && event.currentTarget.contains(related)) return;
+          deactivateNode();
+        })
+        .on("click", (event, d) => {
+          event.stopPropagation();
+          if (pinnedNode && pinnedNode.id === d.id) {
+            pinnedNode = null;
+            deactivateNode();
+            return;
+          }
+          pinnedNode = d;
+          activateNode(d, panel);
+        });
+
+      panelsEl.appendChild(card);
+    });
+
+    document.getElementById("search").addEventListener("input", (e) => {
+      const q = e.target.value.trim().toLowerCase();
+      panelRoots.forEach(root => {
+        root.selectAll(".node").classed("faded", d => q && !d.name.toLowerCase().includes(q));
+        if (!q) root.selectAll(".link").classed("faded highlight", false);
+        else root.selectAll(".link").classed("faded", true).classed("highlight", false);
+      });
+      if (!q && !pinnedNode && !hoveredNode) resetAllHighlights();
+      else if (pinnedNode) highlightNode(pinnedNode.id, pinnedNode.panelId);
+      else if (hoveredNode) highlightNode(hoveredNode.id, hoveredNode.panelId);
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape") return;
+      pinnedNode = null;
+      hoveredNode = null;
+      document.getElementById("search").value = "";
+      hideDetail();
+      resetAllHighlights();
+      panelRoots.forEach(root => {
+        root.selectAll(".node").classed("faded", false);
+      });
+    });
+
+    document.getElementById("canvas-wrap").addEventListener("click", (e) => {
+      if (e.target.closest(".node")) return;
+      if (!pinnedNode) return;
+      pinnedNode = null;
+      hoveredNode = null;
+      hideDetail();
+      resetAllHighlights();
+    });
+  </script>
+</body>
+</html>

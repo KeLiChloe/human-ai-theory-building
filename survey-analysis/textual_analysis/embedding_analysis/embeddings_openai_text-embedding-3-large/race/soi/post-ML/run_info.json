@@ -1,0 +1,37 @@
+{
+  "created_at": "2026-08-03T03:40:50.360073",
+  "task": "race",
+  "theory_type": "soi",
+  "phase": "post-ML",
+  "input_file": "/Users/keli/Desktop/Things/PhD/Project_Code/human-ai-theory-building/survey-analysis/anonymous_survey_data.csv",
+  "text_column": "Q Race.15 LLM_refined post-ML theory (SOI)",
+  "participant_name_column": "Participant ID",
+  "participant_type_column": "student_0, senior_1, genAI_2",
+  "participant_type_map": {
+    "0": "student",
+    "1": "senior",
+    "2": "GenAI"
+  },
+  "embedding_model": "text-embedding-3-large",
+  "raw_embedding_dimension_3072": {
+    "api_dimensions": null,
+    "actual_dimension": 3072
+  },
+  "pca_source_dimension": 3072,
+  "pca_variance_retained_target": 0.95,
+  "pca_embedding_dimension": 69,
+  "pca_explained_variance_retained_actual": 0.951047956943512,
+  "n_participants": 98,
+  "output_format": "wide",
+  "output_columns": [
+    "participant_name",
+    "participant_type",
+    "text_word_count",
+    "raw_embedding_dimension_3072",
+    "pca_embedding"
+  ],
+  "output_parquet": "/Users/keli/Desktop/Things/PhD/Project_Code/human-ai-theory-building/survey-analysis/textual_analysis/embedding_analysis/embeddings_openai_text-embedding-3-large/race/soi/post-ML/embeddings_wide.parquet",
+  "pca_model": "/Users/keli/Desktop/Things/PhD/Project_Code/human-ai-theory-building/survey-analysis/textual_analysis/embedding_analysis/embeddings_openai_text-embedding-3-large/race/soi/post-ML/pca_model_from_3072d.pkl",
+  "output_subdir": "race/soi/post-ML",
+  "notes": "Each participant appears exactly once. participant_name is cleaned (whitespace + GenAI duplicate suffix). text_word_count is the word count of the cleaned theory text. raw_embedding_dimension_3072 stores the full OpenAI embedding. pca_embedding is fitted from the 3072d embedding (95% variance retained)."
+}

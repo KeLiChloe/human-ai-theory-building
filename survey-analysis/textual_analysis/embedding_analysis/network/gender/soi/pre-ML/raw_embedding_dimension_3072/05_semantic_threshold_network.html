@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Semantic Network</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+  <style>
+    :root {
+      --bg-deep: #ffffff;
+      --bg-mid: #f8fafc;
+      --surface: #ffffff;
+      --surface-elevated: #f8fafc;
+      --stroke: #e2e8f0;
+      --stroke-light: #cbd5e1;
+      --text: #0f172a;
+      --text-soft: #334155;
+      --muted: #64748b;
+      --accent: #2563eb;
+      --accent-dim: rgba(37, 99, 235, 0.12);
+      --gold: #92702a;
+      --sidebar-w: min(440px, 40vw);
+      --radius: 20px;
+      --radius-sm: 12px;
+      --shadow-lg: 0 4px 24px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.04);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      font-family: "DM Sans", system-ui, sans-serif;
+      color: var(--text);
+      background: var(--bg-deep);
+      overflow: hidden;
+    }
+
+    .shell {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  height: 100vh;
+  min-height: 0;
+}
+
+.site-sidebar {
+  width: 300px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #e2e8f0;
+  background: #f8fafc;
+  min-height: 0;
+}
+
+.sidebar-brand {
+  padding: 1.15rem 1.1rem 0.9rem;
+  border-bottom: 1px solid #e2e8f0;
+  flex-shrink: 0;
+}
+
+.sidebar-brand a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.sidebar-brand .eyebrow {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #92702a;
+  margin-bottom: 0.35rem;
+}
+
+.sidebar-brand h1 {
+  margin: 0;
+  font-family: "Instrument Serif", Georgia, serif;
+  font-size: 1.35rem;
+  font-weight: 400;
+  line-height: 1.15;
+  color: #0f172a;
+}
+
+.sidebar-scroll {
+  flex: 1;
+  overflow: auto;
+  padding: 0.65rem 0.55rem 1rem;
+}
+
+.nav-task {
+  margin-bottom: 0.85rem;
+}
+
+.nav-task-title {
+  margin: 0 0 0.35rem;
+  padding: 0.35rem 0.55rem;
+  font-family: "Instrument Serif", Georgia, serif;
+  font-size: 1.15rem;
+  font-weight: 400;
+  color: #1e293b;
+}
+
+.nav-task.race .nav-task-title { color: #854d0e; }
+.nav-task.gender .nav-task-title { color: #1d4ed8; }
+
+.nav-theory {
+  margin-bottom: 0.35rem;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.nav-theory summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 0.5rem 0.55rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  user-select: none;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+
+.nav-theory summary::-webkit-details-marker { display: none; }
+
+.nav-theory summary::before {
+  content: "";
+  width: 0.4rem;
+  height: 0.4rem;
+  border-right: 2px solid #475569;
+  border-bottom: 2px solid #475569;
+  transform: rotate(-45deg);
+  flex-shrink: 0;
+  transition: transform 0.2s;
+}
+
+.nav-theory[open] summary::before {
+  transform: rotate(45deg);
+  margin-top: -0.1rem;
+}
+
+.nav-theory summary:hover { background: #eef2f7; }
+
+.nav-phase {
+  padding: 0.15rem 0.35rem 0.35rem 1.15rem;
+}
+
+.nav-phase-label {
+  margin: 0.35rem 0 0.25rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.nav-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-bottom: 0.25rem;
+}
+
+.nav-task.has-active > .nav-task-title {
+  font-weight: 600;
+}
+
+.nav-task.race.has-active > .nav-task-title { color: #92400e; }
+.nav-task.gender.has-active > .nav-task-title { color: #1d4ed8; }
+
+.nav-theory.has-active > summary {
+  color: #1e40af;
+  font-weight: 700;
+}
+
+.nav-phase.has-active > .nav-phase-label {
+  color: #1d4ed8;
+  font-weight: 700;
+}
+
+.nav-links a {
+  display: block;
+  text-decoration: none;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: #475569;
+  padding: 0.38rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  border-left: 3px solid transparent;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.nav-links a:hover {
+  color: #0f172a;
+  background: #e8f2ff;
+  border-color: #bfdbfe;
+  border-left-color: #93c5fd;
+}
+
+.nav-links a.active {
+  color: #1e3a8a;
+  background: #dbeafe;
+  border-color: #93c5fd;
+  border-left-color: #2563eb;
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.12);
+}
+
+.shell-main {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.shell-main.index-main {
+  overflow: auto;
+}
+
+.index-welcome {
+  padding: 2.5rem 2.25rem 3rem;
+  max-width: 52rem;
+}
+
+.index-welcome h2 {
+  margin: 0 0 0.75rem;
+  font-family: "Instrument Serif", Georgia, serif;
+  font-size: clamp(1.75rem, 3vw, 2.35rem);
+  font-weight: 400;
+  color: #0f172a;
+}
+
+.index-welcome p {
+  margin: 0 0 1rem;
+  color: #475569;
+  line-height: 1.65;
+  font-size: 0.95rem;
+}
+
+.index-welcome .index-cta {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.index-welcome .index-glossary {
+  margin: 0 0 1.25rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.index-welcome .index-glossary dt {
+  margin: 0 0 0.25rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #334155;
+}
+
+.index-welcome .index-glossary dd {
+  margin: 0 0 0.85rem;
+  color: #475569;
+  line-height: 1.6;
+  font-size: 0.9rem;
+}
+
+.index-welcome .index-glossary dd:last-child {
+  margin-bottom: 0;
+}
+
+.index-welcome .index-howto {
+  margin: 0 0 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.index-welcome ul {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: #64748b;
+  line-height: 1.7;
+  font-size: 0.9rem;
+}
+
+
+
+    .app {
+      position: relative;
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      height: 100%;
+      min-height: 0;
+    }
+
+    header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1.5rem;
+      padding: 1.25rem 1.75rem 1.1rem;
+      border-bottom: 1px solid var(--stroke);
+      background: #ffffff;
+    }
+
+    .title-wrap h1 {
+      margin: 0;
+      font-family: "Instrument Serif", Georgia, serif;
+      font-size: clamp(1.65rem, 2.5vw, 2.35rem);
+      font-weight: 400;
+      line-height: 1.1;
+      letter-spacing: -0.01em;
+      color: var(--text);
+    }
+
+    .title-wrap p {
+      margin: 0.5rem 0 0;
+      color: var(--text-soft);
+      font-size: 0.92rem;
+      font-weight: 400;
+      letter-spacing: 0.01em;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      justify-content: flex-end;
+      align-items: flex-start;
+    }
+
+    .badge {
+      border: 1px solid var(--stroke-light);
+      background: #f8fafc;
+      border-radius: 999px;
+      padding: 0.48rem 0.9rem;
+      font-size: 0.76rem;
+      color: var(--muted);
+      white-space: nowrap;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+
+    .badge strong { color: var(--text); font-weight: 600; }
+    .badge.accent {
+      border-color: #bfdbfe;
+      background: #eff6ff;
+      color: var(--text-soft);
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      padding: 0.7rem 1.75rem;
+      border-bottom: 1px solid var(--stroke);
+      background: #f8fafc;
+    }
+
+    .search {
+      flex: 1;
+      max-width: 380px;
+      position: relative;
+    }
+
+    .search input {
+      width: 100%;
+      border: 1px solid var(--stroke-light);
+      background: #ffffff;
+      color: var(--text);
+      border-radius: var(--radius-sm);
+      padding: 0.68rem 0.95rem 0.68rem 2.4rem;
+      font: inherit;
+      font-size: 0.88rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    }
+
+    .search input::placeholder { color: var(--muted); }
+
+    .search input:focus {
+      border-color: #93c5fd;
+      background: #ffffff;
+      box-shadow: 0 0 0 3px var(--accent-dim);
+    }
+
+    .search svg {
+      position: absolute;
+      left: 0.9rem;
+      top: 50%;
+      transform: translateY(-50%);
+      opacity: 0.45;
+      color: var(--muted);
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 0.8rem;
+      letter-spacing: 0.02em;
+      padding: 0.35rem 0.75rem;
+      border-radius: 999px;
+      border: 1px solid var(--stroke);
+      background: #ffffff;
+    }
+
+    .main {
+      display: grid;
+      grid-template-columns: 1fr var(--sidebar-w);
+      min-height: 0;
+    }
+
+    .canvas-wrap {
+      overflow: auto;
+      padding: 1rem 1.25rem 1.5rem 1.75rem;
+    }
+
+    .panels {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.15rem;
+      align-content: start;
+    }
+
+    .panel-card {
+      border: 1px solid var(--stroke-light);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .panel-card.active {
+      border-color: #93c5fd;
+      box-shadow:
+        0 0 0 1px rgba(37, 99, 235, 0.12),
+        0 12px 32px rgba(15, 23, 42, 0.1);
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.85rem 1.1rem 0.7rem;
+      border-bottom: 1px solid var(--stroke);
+      background: #f8fafc;
+    }
+
+    .panel-head h2 {
+      margin: 0;
+      font-size: 0.88rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      color: var(--text-soft);
+    }
+
+    .panel-head .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      box-shadow: 0 0 12px currentColor;
+    }
+
+    .panel-svg {
+      width: 100%;
+      aspect-ratio: 1;
+      display: block;
+      background: #fafbfc;
+    }
+
+    .link {
+      stroke: #6b7c8f;
+      stroke-linecap: round;
+      pointer-events: none;
+      transition: stroke-opacity 0.2s, stroke-width 0.2s;
+    }
+
+    .node { cursor: pointer; }
+    .node .hit { fill: transparent; stroke: none; pointer-events: all; }
+    .node .shell, .node .core { pointer-events: none; }
+
+    .node circle.shell {
+      fill: rgba(15, 23, 42, 0.04);
+      stroke-width: 1.5px;
+    }
+
+    .node circle.core {
+      stroke: rgba(255, 255, 255, 0.95);
+      stroke-width: 1.2px;
+      transition: filter 0.15s ease;
+    }
+
+    .node.faded { opacity: 0.2; }
+    .link.faded { stroke-opacity: 0.08; }
+    .node.focused circle.core { filter: drop-shadow(0 0 6px rgba(37, 99, 235, 0.35)); }
+    .link.highlight {
+      stroke: var(--accent);
+      stroke-opacity: 0.85;
+      stroke-width: 2.2px;
+    }
+
+    .detail-aside {
+      border-left: 1px solid var(--stroke-light);
+      background: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      box-shadow: -4px 0 16px rgba(15, 23, 42, 0.04);
+    }
+
+    .detail-empty {
+      margin: auto;
+      text-align: center;
+      padding: 2.5rem 2rem;
+      color: var(--muted);
+      max-width: 28ch;
+      line-height: 1.6;
+      font-size: 0.9rem;
+    }
+
+    .detail-empty .orb {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 1.25rem;
+      border-radius: 50%;
+      border: 1px solid var(--stroke-light);
+      background: radial-gradient(circle at 35% 30%, rgba(37,99,235,0.12), transparent 60%);
+      position: relative;
+    }
+    .detail-empty .orb::after {
+      content: "";
+      position: absolute;
+      inset: 18px;
+      border-radius: 50%;
+      border: 1px dashed rgba(37,99,235,0.25);
+    }
+
+    .detail {
+      display: none;
+      flex-direction: column;
+      min-height: 0;
+      height: 100%;
+    }
+
+    .detail.visible { display: flex; }
+
+    .detail-header {
+      padding: 1.5rem 1.5rem 1rem;
+      border-bottom: 1px solid var(--stroke);
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    .detail-header::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 1.25rem;
+      bottom: 1rem;
+      width: 3px;
+      border-radius: 0 2px 2px 0;
+      background: var(--detail-accent, var(--accent));
+      box-shadow: 0 0 8px rgba(37, 99, 235, 0.2);
+    }
+
+    .detail-header .group-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      margin-bottom: 0.6rem;
+      padding-left: 0.75rem;
+    }
+
+    .detail-header h3 {
+      margin: 0;
+      padding-left: 0.75rem;
+      font-family: "Instrument Serif", Georgia, serif;
+      font-size: 1.75rem;
+      line-height: 1.15;
+      font-weight: 400;
+      color: var(--text);
+    }
+
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      margin-top: 1rem;
+      padding-left: 0.75rem;
+    }
+
+    .stat {
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius-sm);
+      padding: 0.4rem 0.7rem;
+      font-size: 0.74rem;
+      color: var(--muted);
+      background: #ffffff;
+    }
+
+    .stat b { color: var(--text-soft); font-weight: 600; }
+
+    .detail-body {
+      padding: 1.15rem 1.5rem 1.75rem;
+      overflow: auto;
+      flex: 1;
+    }
+
+    .detail-body h4 {
+      margin: 0 0 0.75rem;
+      font-size: 0.72rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .explanation {
+      font-size: 0.93rem;
+      line-height: 1.72;
+      color: var(--text-soft);
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <nav id="site-sidebar" class="site-sidebar" aria-label="Network catalog"></nav>
+    <div class="shell-main">
+  <div class="app">
+    <header>
+      <div class="title-wrap">
+        <h1 id="page-title">Semantic Network</h1>
+        <p id="page-subtitle"></p>
+      </div>
+      <div class="meta">
+        <div class="badge">cosine ≥ <strong id="threshold-val"></strong></div>
+        <div class="badge"><strong id="quantile-val"></strong> percentile</div>
+        <div class="badge accent" id="variant-badge"></div>
+      </div>
+    </header>
+
+    <div class="toolbar">
+      <label class="search">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+        <input id="search" type="search" placeholder="Search by contributor ID…" autocomplete="off" />
+      </label>
+      <div class="hint">Hover a node; click to pin.</div>
+    </div>
+
+    <div class="main">
+      <div class="canvas-wrap" id="canvas-wrap">
+        <div class="panels" id="panels"></div>
+      </div>
+      <aside class="detail-aside">
+        <div class="detail-empty" id="detail-empty">
+          <div class="orb"></div>
+          <div>Hover any node to reveal the contributor ID and their theoretical explanation.</div>
+        </div>
+        <div class="detail" id="detail">
+          <div class="detail-header" id="detail-header">
+            <div class="group-pill"><span class="dot" id="detail-dot"></span><span id="detail-group"></span></div>
+            <h3 id="detail-name"></h3>
+            <div class="stats">
+              <div class="stat">Neighbors <b id="detail-neighbors"></b></div>
+              <div class="stat">Words <b id="detail-words"></b></div>
+            </div>
+          </div>
+          <div class="detail-body">
+            <h4>Theory explanation</h4>
+            <div class="explanation" id="detail-explanation"></div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+    </div>
+  </div>
+
+  <script id="network-data" type="application/json">{"title": "Semantic Network", "subtitle": "Gender · Interactions · Pre ML", "threshold": 0.7836, "threshold_quantile_pct": 85, "collapsed": false, "panels": [{"id": "student", "title": "PhD Students (n=60)", "color": "#7DB7E8", "nodes": [{"id": "student-0", "name": "phd_contributor_wbgok", "x": 0.29452119692911277, "y": 0.47552382113266695, "degree": 13, "words": 112, "explanation": "Share of female authors increases the probability of a paper discussing gender inequality and this increase would be higher in social science domain. Among social science papers, having female authors increases the probability of discussing gender inequality. I think this effect should be one of the highest among all the other options. For social science and paper inequality mentions, prior research on gender inequality increases the probability of future research in this domain and this effect should be higher in social science. As for female & white, I think being white insulates women from other inequalities so the highlight would be on gender inequalities, so I think the effect should be larger."}, {"id": "student-1", "name": "phd_contributor_ul2n5", "x": 0.2525101431981804, "y": 0.4083947388981924, "degree": 7, "words": 140, "explanation": "First, social science attracts more female academics than natural sciences. Second, women are more likely to care about and therefore research gender inequality because they have been exposed, directly or indirectly, to gender discrimination. The relationship between female and the probability of it being a paper on gender inequality is positively moderated by the news and inequality coverage because this would indicate that (1) there is general and academic interest for the topics and (2) it is possible to get published and have a career in this field of research. The relationship between female and the probability of it being a paper on gender inequality is negatively moderated by being white, since non-white people are more likely to be more interested in racial inequality by the same logic, and racial inequalities has similarities to gender inequality in a structural sense."}, {"id": "student-2", "name": "phd_contributor_yedjp", "x": 0.20626059110428818, "y": 0.5053406852751702, "degree": 0, "words": 140, "explanation": "Social science scholars are strongly driven by the relevance and importance. They intend to address important issues and in many times, trendy topics like gender or AI is more publishable and is better for them to get a job. Paper mention trend is a strong indicator of measuring the current relevance and importance of the topic and will drive social scientist to publish more on this topic. Females are more likely to work on gender inequality because they can relate to it. White females are more likely to work on this more because they are less relatable to other inequality dimensions like race. News inequality measure would likely to impact scholars to focus more on inequality studies. Yet, if their are other inequality dimension that is more relatable for scholars, they will more likely to be drawn on that aspect."}, {"id": "student-3", "name": "phd_contributor_c5sgk", "x": 0.5238016248598097, "y": 0.16425710364963206, "degree": 0, "words": 53, "explanation": "The logic parallels that for racial inequality interaction effects. Journal disciplinary orientation may be crucial because acceptance probabilities for gender inequality submissions may approach zero in non-social science disciplines. In such cases, the variables influencing submission volume and acceptance likelihood may operate more strongly in social science journals than in other disciplinary outlets."}, {"id": "student-4", "name": "phd_contributor_45ypj", "x": 0.6437701060447192, "y": 0.2061195950191907, "degree": 0, "words": 87, "explanation": "This connects to the previously outlined idea of an interaction by topic interest. Prior academic interest as visible from publications should positively predict likelihood of another publication in this area, however, I would expect this to be qualified by the question of whether the research team is interested/aware of the topic and therefore notices the increase in interest and decides to act on it. I believe the effect of popularity to be amplified for social science teams, majority white teams and dampened for engineering and technology teams."}, {"id": "student-5", "name": "phd_contributor_5nazt", "x": 0.08, "y": 0.5231333036926751, "degree": 0, "words": 34, "explanation": "I think a social science journal is more likely to accept gender-related studies and reaches a large audience. As the number of papers and news articles increases, their combined effect can therefore predict gender."}, {"id": "student-6", "name": "phd_contributor_mdmrd", "x": 0.26810007236197264, "y": 0.3573217543599422, "degree": 9, "words": 86, "explanation": "I would assume that the higher the share of female authors in a social science paper, the more likely the this paper is about gender inequality. Similarily, news_inequality_mentions should reinforce the share of gender inequality topics in social science papers. It will also be interesting to know whether more gender inequality papers increase news mentioning of inequality. Finally, I assume a paper by all female authors published in a engineering and technology journal is more likely to discuss gender inequality than that written by all male."}, {"id": "student-7", "name": "phd_contributor_kmwj4", "x": 0.31038288773522016, "y": 0.5838697869838738, "degree": 1, "words": 87, "explanation": "If there are more authors, then variations upward away from the mean proportion of female authors in the field should mean more. By itself natural science and engineering and tech should generally predict a paper's less likely to be about gender inequality, but if there are lots of mentions about gender inequality in the news lately, the impact should be less as there should be more features speaking about gender inequality among researchers in the field. These seem most important for changing how important these variables are."}, {"id": "student-8", "name": "phd_contributor_zbjey", "x": 0.1336201794127673, "y": 0.6665268216923615, "degree": 0, "words": 51, "explanation": "I think social science is a broad class, and it may include many inequalities, such as gender inequality and race inequality. If another feature related to race emerges, that certainly reduces the chance of gender inequality to me. From my observations on social news, black, asian, and hispanic gender issues decrease."}, {"id": "student-9", "name": "phd_contributor_2xy9o", "x": 0.5391263357840771, "y": 0.48876816425820363, "degree": 0, "words": 234, "explanation": "Here, my line of reasonings are very simple: - For the interactions effects between female and the natural and hard sciences, I imagine that having female authors incentivises them to talk about gender inequality within natural and hard sciences and STEM due to the disproportionate ratio of men to women in those fields of study. This exacerbates gender inequality for female authors, leading them to bring up more issues related on that specific topic. It should have a negative effect on the natural and hard sciences variables as women will be more likely to bring up these topics in the natural and hard science journals, to spread direct awareness on the reasons behind gender inequality, and to do so in those journals so that authors in those field are exposed to this issue (as authors in social sciences are much more well-versed in the topics relating to inequalities). - The interaction effect of female and black is related to the disproportionate amount of black women subject to single motherhood in the US and in the UK. This could lead to a substantial saliency in the personal experience of this issue, propulsing black women or female authors in a country with a large black population to have higher awareness in gender inequality. Higher proportions of black ethnic populations, should significantly increase the correlation between the female variable and the mentioning of gender inequality in papers."}, {"id": "student-10", "name": "phd_contributor_z7ttj", "x": 0.674971214505716, "y": 0.7942947291998078, "degree": 0, "words": 52, "explanation": "I think academic explanations tend to have a trend. The country of the authors and the number of recent papers matter. For the rest of the factors, I don't think they are directly correlated, so I just use the negative sign, but I would rather choose a third option with no correlation."}, {"id": "student-11", "name": "phd_contributor_le01h", "x": 0.44845615857164023, "y": 0.1747552307448445, "degree": 0, "words": 94, "explanation": "I believe asians dominated paper in the field of engineering/tech has no second order intearction relevance to gener inequality. Also, a feature like the number of authors has nothing to do with gender inequality in terms of second order interaction, specially if it is no the domain of nature science where the first authors do the majority of the work. On contrary, female authors in the domain of social science likely have a strong second order interaction because females are minority gender group and social science is the appropriate platform to address gender ineqaulity."}, {"id": "student-12", "name": "phd_contributor_giyw7", "x": 0.468147152692077, "y": 0.4384186871865219, "degree": 10, "words": 127, "explanation": "among these interaction terms, i would expect social science x female to be positive and the strongest among the three. Like I said in the last set of questions, lived experience and social position shape the questions researchers ask (i.e., women most likely to ask questions about gender ineq) and social science is the most likely field to publish work on gender inequality given the strong focus on inequality and social processes. second, i'm ranking social science x inequality mentions which I think captures the disciplinary focus on inequality, within the field most aligned with inequality research. then lastly, i predict female x paper_ineq_mention will be a positive predictor, perhaps because when inequality discourse rises, female scholars may be particularly likely to frame research around gender inequality."}, {"id": "student-13", "name": "phd_contributor_7x004", "x": 0.8807113296395996, "y": 0.4471949676287802, "degree": 0, "words": 26, "explanation": "it occurs for me that these individual factors are positively associated to the outcome, and the interaction of the them will be also be positive influencing"}, {"id": "student-14", "name": "phd_contributor_ayd29", "x": 0.5175600406399541, "y": 0.36910493342662354, "degree": 2, "words": 208, "explanation": "The interaction between social_science and female (+) is likely the most important because being a female scholar in a social science discipline combines both the methodological tools and the positional knowledge needed to study gender inequality. A female author in engineering may lack the disciplinary framing to study gender topics, and a male social scientist may study inequality but not necessarily gender inequality. The interaction between social_science and white (+) captures the idea that Western academic institutions, where white scholars are disproportionately represented, have historically developed strong gender studies programs and feminist research traditions. A white scholar outside social science may not engage with gender inequality, and a non-white social scientist may focus on other forms of inequality such as racial or economic. Finally, the interaction between white and female (+) reflects that white female scholars may be especially drawn to gender inequality research because the feminist academic tradition has historically centered the experiences of white women. White women in academia are well-positioned within these established networks and may face fewer barriers to pursuing gender-focused research agendas compared to women of other racial backgrounds who may split their focus across both racial and gender inequality. The two identities reinforce each other in orienting research toward gender inequality specifically."}, {"id": "student-15", "name": "phd_contributor_558ea", "x": 0.08168808066174589, "y": 0.08, "degree": 0, "words": 17, "explanation": "As long as a paper is in \"Engineering and Technology\", it's extremely unlikely to discuss gender inequality."}, {"id": "student-16", "name": "phd_contributor_dwdg8", "x": 0.14291889658551188, "y": 0.3612694096573998, "degree": 0, "words": 33, "explanation": "More authors from different races increase the possibility of a paper discusses gender inequality. Similarly, more female authors and more black female may also increase the possibility of a paper discusses gender inequality."}, {"id": "student-17", "name": "phd_contributor_fojz7", "x": 0.53105057063065, "y": 0.5099555875417626, "degree": 2, "words": 172, "explanation": "I don't think some interactions are \"important\", and I just think some of those would have \"strong association\". For social science x female, I would expect female authors to be more likely to pursue gender inequality related topics, and those topics appear the most in social science publications from my impression. This is not an \"interesting\" or theoretically \"important\" selection -- I just see a potentially strong correlation. For female x paper_ineq_mention, similarly, I would expect temporal trends to highly predict focal mention of gender inequality, and female authors may mutually reinforce this trend by actively being part of it. For num_authors x female, I feel like this is more interesting and potentially relevant, larger teams that include more female authors might be more likely to introduce such topics and sustain their gender-related agenda -- or as a side exploration, near the end of the empirical parts, they might themselves explore the female interactions apart from the main effect they predicted and frame it as part of the storyline in the paper."}, {"id": "student-18", "name": "phd_contributor_ogfiu", "x": 0.5013161160296916, "y": 0.26508972954261095, "degree": 0, "words": 148, "explanation": "It aligns very closely with the text I wrote about the main effects and mediators. First, I think being in social science naturally conditions you/or you self-selected into social sciences because you have an inherent interest in topics such as inequality. Second, I think being female means that you are much more likely to have experienced a form of gender inequality (pay negotiations, tenure promotions, etc.) than your male colleagues, which I assume sparks one's research interest in this topic. Third, I think being White means that you are less inclined to focus on racial inequality and would start with focusing on gender inequality (although Dobbin and Kalev's work demonstrates that Black women are the group facing the toughest discrimination/lowest salary, etc. in the workplace). Fourth, I believe that reading other papers about gender inequality activates the topic as a potential topic in the mind of female scholars."}, {"id": "student-19", "name": "phd_contributor_rvget", "x": 0.9199999999999999, "y": 0.7384111989697644, "degree": 0, "words": 26, "explanation": "If two features share the same channel of affecting the prediction, adding the interaction term of these two features will weaken each other's influence on Y."}, {"id": "student-20", "name": "phd_contributor_zcof0", "x": 0.5528548587126053, "y": 0.3053996110199282, "degree": 3, "words": 77, "explanation": "The interaction between social_science and female is positive (+) because social science venues actually provide the platform for female researchers to explore gender topics. Conversely, the engineering_and_technology and female interaction is negative (–) because the strict technical focus of engineering journals could override demographic effect, decreasing the chance of discussing social disparities. social_science and news_mentions reinforce each other (+) since social scientists are the ones who are trained to translate trending public interest into formal academic research."}, {"id": "student-21", "name": "phd_contributor_yg9p5", "x": 0.44901712570319563, "y": 0.45186366518231696, "degree": 13, "words": 78, "explanation": "First, I think interactions including social_science should generally be more important in predicting whether gender inequality is discussed, since the field already values inequality-related research, and factors that either increase topic salience or incentives should generally be more important in increasing the likelihood that a paper discusses gender inequality. Also, I expect these interactions to be positive because the effects of female author, news salience, and prior academic research on inequality should all be amplified within social science."}, {"id": "student-22", "name": "phd_contributor_5wz57", "x": 0.26586208802712313, "y": 0.1076441796002297, "degree": 0, "words": 60, "explanation": "Apart from the three factors I assumed the most important in the previous stage, engineering and technology domains can also associtate with gender inequality topics, as long as it is interacted with existing gender inquality papers. So I add this pair into the choice. Some tech research focuses on how to use advanced technology to solve the problem in inequality."}, {"id": "student-23", "name": "phd_contributor_wqux6", "x": 0.21768123715516746, "y": 0.41654105412131637, "degree": 8, "words": 129, "explanation": "If the paper is a social science paper, and the inequality related topics are mentioned in academia in the past 3 years, it is more likely for the paper to be a gender inequality related paper. This is mostly because the if the inequality related topics are mentioned in academia, for it to be a social science paper is highly likely. Similarly, if the paper is a social science paper, and the inequality related topics are mentioned in news in the past 3 years, it is more likely for the paper to be a gender inequality related paper. The third relation is not a very strong one, but the paper being in social sciences and having female authors would amplify the probability of it being a gender inequality paper."}, {"id": "student-24", "name": "phd_contributor_mcaaw", "x": 0.36412919314258263, "y": 0.18076377061328708, "degree": 0, "words": 71, "explanation": "The natural science papers probably never discuss gender inequality during the times when the news/academic papers are not discussing gender inequality. When gender inequality is more popular in the discourse, there's probably a few papers that discuss gender inequality in natural science itself, leading to the positive relationship. There's likely a similar effect in social science, but the effect is not as strong, due to the social science baseline being larger."}, {"id": "student-25", "name": "phd_contributor_1kwwe", "x": 0.40105106188222367, "y": 0.321715659326808, "degree": 8, "words": 90, "explanation": "Social science domain and news inequality mentions together determine how much the research community will be interested in gender-related topics. News inequality mentions and paper inequality mentions will boost either other, they together will boost up the popularity of the research topic. Finally, this is perhaps the weakest interaction as there have been a large volume of research produced by (social science, female) that are not related to gender-equality issues. However, social science and female together determines the relevance of the research to the field and to authors' own community."}, {"id": "student-26", "name": "phd_contributor_iv4qg", "x": 0.34443537396701646, "y": 0.44724385258369875, "degree": 20, "words": 108, "explanation": "Female authors are more likely to study gender inequality. Such effects are very low in natural science, engineering, and technology papers, and are high in social science papers. Therefore, the interaction between female and social_science is important. In countries where races are diverse, authors focus more on race-related topics, and hence focus less on gender-related topics, especially (if not only) in social science studies. Therefore, the interaction between country_race_diversity_score and social_science is important. If there are more papers mentioning gender inequality in recent years, that indicate the popularity of the topic, especially (if not only) in social science studies. Therefore, the interaction between paper_inequality_mentions_3_years and social_science is important."}, {"id": "student-27", "name": "phd_contributor_c9vs4", "x": 0.8759202167289338, "y": 0.29406331776494, "degree": 0, "words": 36, "explanation": "My reasoning for choosing this specific interaction and its sign is based on my own limited observations. While I do not have a formal theoretical explanation, I have noticed that these factors appear together more frequently."}, {"id": "student-28", "name": "phd_contributor_mrqrj", "x": 0.2585127246499949, "y": 0.24003134283714173, "degree": 1, "words": 75, "explanation": "Females' interest in the topic may boost inequality mentions in the last 3 years, and the timely topic may also encourage females to discuss this topic. Gender and race diversity may both be correlated with gender inequality topics and reinforce each other's influence. Engineering and technology is a male-dominated field where it might be harder for females to pursue this type of research or talk about it, so there might be a negative relationship here."}, {"id": "student-29", "name": "phd_contributor_zi2lh", "x": 0.23561232260508364, "y": 0.5544513799093529, "degree": 4, "words": 48, "explanation": "Females in social science are more likely to discuss gender inequality than not in social science. More privileged female authors are more likely to discuss gender inequality (as less privileged classes are more vocal about other issues), and white and author_race_diversity scores are both positive proxies of privilege."}, {"id": "student-30", "name": "phd_contributor_559wp", "x": 0.4219585650047001, "y": 0.3873057799508443, "degree": 11, "words": 79, "explanation": "The social science and female interaction is the most important interaction, more female authors in a paper in the social science increases the chance that the paper is about gender inequality research. If the news are common before the paper, it might attract historically disadvantaged groups, so the interaction between female and news_inequality_mentions_3_years is the second one. The third one is the natural science and female because female authors in biology might produce gender inequality research more than others."}, {"id": "student-31", "name": "phd_contributor_34xvl", "x": 0.35164681853360685, "y": 0.08912422339908227, "degree": 0, "words": 69, "explanation": "'- natural_science X num_authors: large consortia of authors (e.g., think of particle physics paper with so many authors) are very rarely about gender. I think the only papers in those journals about gender would be \"comments\" made by few authors. - engineering_and_technology X num_authors: same reasoning as above. - natural_science X female: I believe this becomes positive, perhaps the only natural_science papers about gender are written by female authors."}, {"id": "student-32", "name": "phd_contributor_kyj4r", "x": 0.30513453285415204, "y": 0.749886058948326, "degree": 0, "words": 82, "explanation": "1. White will increase the possibility of female the possibility of mention since compared with other women, white women often occupy a specific position of privilege about race, which allows them focus more singularly on gender as the main oppression. 2. Social science will increase the news' effect on Y since they are more responsive to the social hot topics. 3. Social science will increase the white effect on Y since fields in social science are more white-dominant compared with STEM fields."}, {"id": "student-33", "name": "phd_contributor_ama1n", "x": 0.24901121366600293, "y": 0.5963074734922451, "degree": 1, "words": 77, "explanation": "female authors who are in countries with high racial diversity scores are much less likely to pursue projects on gender inequality because they do not see that as an urgent need for society. female authors with racially diverse coauthors are more likely to pursue a gender inequality paper as their social interaction is more pro-diversity. News_inquality_mentions reflects how much inequality is emphasized in the society, and should prompt female authors to pursue research project in this area."}, {"id": "student-34", "name": "phd_contributor_0k61g", "x": 0.47319880633858574, "y": 0.5444579267636365, "degree": 2, "words": 67, "explanation": "I believe the interactionsare probably all positive, as combined they are stronger indicators that the paper will be about gender inequality. I include Female in all the choices as I think this is \"decisive\". So a female studying social science, a black female, and a female in academia, where there is an increasing trend in this topic, are more likely to publish a paper about gender inequality."}, {"id": "student-35", "name": "phd_contributor_dpw1t", "x": 0.502315755612283, "y": 0.42498440668275694, "degree": 10, "words": 234, "explanation": "I expect all three interactions to be positive because in each case the two factors likely reinforce each other rather than offset each other. First, the interaction between social_science and female is likely positive because the influence of female representation on research topics should be stronger in fields where inequality is already a central concern. In social science disciplines, where gender and inequality are common subjects, a higher share of female authors may further increase the likelihood that gender inequality is discussed. In other fields, that same increase in female representation may have a weaker effect. Second, I expect a positive interaction between social_science and paper_inequality_mentions_3_years because recent academic attention to inequality likely has a stronger impact within disciplines already oriented toward social issues. When inequality is prominent in recent scholarship, social science journals may amplify that trend more than other disciplines. Third, the interaction between female and paper_inequality_mentions_3_years is also likely positive. When inequality is already salient in the academic environment, teams with a higher share of female authors may be especially responsive to that momentum and more likely to engage directly with gender inequality. In contrast, when inequality is less prominent in recent scholarship, the effect of author gender composition may be more muted. Overall, these interactions reflect the idea that disciplinary context, author composition, and broader academic trends can mutually reinforce one another in shaping whether a paper discusses gender inequality."}, {"id": "student-36", "name": "phd_contributor_1gofd", "x": 0.5318754723853109, "y": 0.9199999999999999, "degree": 0, "words": 29, "explanation": "I still think these are the most important second order interactions. Authors' positionalities in theory should play little to no roles in whether their view is progressive or not."}, {"id": "student-37", "name": "phd_contributor_4luvh", "x": 0.30040427594384017, "y": 0.3174801338311462, "degree": 1, "words": 176, "explanation": "As mentioned previously, I think the higher racial diversity in the country will be positive for a society that is aware of and willing to address problems of inequalities, including gender inequalities. For female researchers in such countries, I think the awareness of the problem and the willingness to address it via paper writing will be enhanced. While news mentions and paper mentions of gender inequality can both serve as the source of researcher's perceived importance of this issue, I think if both news and paper mentions of gender inequality in previous years are higher, it suggests that both the academia and the public are interested in and care about this issue. Therefore, I would think that this will add additional incentive to researchers' study of the topic, thus the production of relevant papers. For the last interaction, my consideration is that if the author list is dominated by female researchers, while the number of authors is also high, then the awareness of gender inequality issue, and the willingness to address it can be collectively enhanced."}, {"id": "student-38", "name": "phd_contributor_mfkek", "x": 0.4225770040042663, "y": 0.41151944185557615, "degree": 15, "words": 102, "explanation": "These interactions reflect the idea that gender-inequality research depends on both disciplinary context and researcher characteristics. The positive social_science × female interaction assumes that female authors are more likely to study gender issues, and this tendency is amplified in social science fields where such topics are institutionally supported. The positive social_science × news_inequality_mentions_3_years interaction assumes that social sciences are especially responsive to public debates, so media attention to inequality strengthens their likelihood of producing gender-inequality research. Finally, the positive female × paper_inequality_mentions_3_years interaction reflects path dependence: when researchers are already working on inequality topics, female authorship further reinforces attention to gender-specific inequality."}, {"id": "student-39", "name": "phd_contributor_81m5u", "x": 0.41297777230922167, "y": 0.7286001762987765, "degree": 0, "words": 80, "explanation": "1. Num_author x female reflects total number of female authors, which is a meaningful signal as more female authors may lead to higher possibility of discussing female inequality. 2. Num_author x country_race_diversity_score shows the total diversity background of the author team. It reflects the total awareness of inequality and therefore gender inequality. 3. Num_author x author_race_diversity_score gives a combined measure of team size and diversity. A larger and more diverse team tends to hold gender inequality as a common interest."}, {"id": "student-40", "name": "phd_contributor_blzc1", "x": 0.5921137498344556, "y": 0.4531576710623053, "degree": 4, "words": 99, "explanation": "I would focus on interactions that combine the strongest first-order factors: social_science × paper_inequality_mentions_3_years and social_science × news_inequality_mentions_3_years (since both variables are strong positive indicators in the first-order setting). For the final interaction, I would include social_science × female, since many fields are still male-dominated, and I expect papers with a higher share of female authors to be more likely to discuss gender inequality. However, this may not be fully accurate, because some feature combinations could be quite rare. As a result, the usefulness of second-order interactions may depend heavily on the modeling approach and the amount of regularization."}, {"id": "student-41", "name": "phd_contributor_c5rzh", "x": 0.36023698049557823, "y": 0.4149662482566052, "degree": 12, "words": 84, "explanation": "These interactions are positive because the predictors reinforce each other. Gender inequality research is more common in the social sciences, and this effect is stronger when there are more female authors who may be more interested in gender-related topics. Similarly, when inequality is frequently discussed in recent academic papers, social science research is more likely to address gender inequality. Finally, increased news attention to inequality combined with higher female representation among authors may further increase the likelihood that gender inequality becomes a research topic."}, {"id": "student-42", "name": "phd_contributor_iuy3c", "x": 0.3716545118132067, "y": 0.6119359168132981, "degree": 0, "words": 187, "explanation": "I followed a similar logic as to my racial two-way interactions. If something is getting published more often - gender inequality papers - then we will surely focus on it as researchers. We need publications to get jobs and tenure, so my hunch is that publication trends really can moderate (positively) what we research. If we already have a predilection to research something based on our personal identity (a white female - ie with no competing identify motivations) then yes, we're probably going to do it MORE if we see editors and reviewers and conferences viewing it positively. I interacted white and female for the same reason as my main effects. If you are a white female, you likely have fewer competing identity topics that may drive you to research another type of inequality. And finally I am guessing that if something is popular in the news historically AND publications historically, that will create a virtuous cycle making researchers study it more going forward. They all take positive signs -- i.e., these all boost the probability that gender inequality will be in the title of the research."}, {"id": "student-43", "name": "phd_contributor_upzfq", "x": 0.5244018597951343, "y": 0.5899523070075785, "degree": 0, "words": 124, "explanation": "I think the effect of female along is probably not very strong since we have a lot of female researchers in all kinds of fields, but when combining with social_science, there should be extra effect since this is a particular population that I assume is very interested in gender inequality research. As for the other two, I don't think their effects are that strong, but given that there are a lot of correlation between the features I believe these might be the only ones that have second order effects. The reasoning is the same with female and social science, I think authors who are more racially diverse might be more interested in gender inequality research but I believe these two effects are very minimal."}, {"id": "student-44", "name": "phd_contributor_7nisc", "x": 0.35683920266960417, "y": 0.2856310071355531, "degree": 1, "words": 81, "explanation": "Using the proportion of female authors alone may be a poor indicator because some fields, such as education and health sciences, may have more female researchers but are not necessarily related to gender inequality. Therefore, the interaction between female representation and author diversity may be more likely to predict publications related to gender inequality. Similarly, the interaction between social science and female representation may also be important, since most fields within the social sciences are not necessarily focused on gender inequality."}, {"id": "student-45", "name": "phd_contributor_41mim", "x": 0.6494716750436591, "y": 0.5678391174242668, "degree": 0, "words": 102, "explanation": "The reasoning is similar to the case on race. I would suspect that these are the three most important variables, and I included all pairwise interactions of these. They would have positive effects for the same reasons. Regarding the first two, one would imagine that the interactions between these two categorical features would be nonzero, as the effect is not likely to be strictly linear. Regarding the third, one could imagine that in line with the idea of intersectionality, white women would be more likely to consider performing research on gender, as this is the only form of discrimination they suffer from."}, {"id": "student-46", "name": "phd_contributor_8fcno", "x": 0.38032054539299104, "y": 0.5492232520139129, "degree": 0, "words": 59, "explanation": "I think much of the work on gender inequality is generated by females and social science researchers. Likely, there is a strong intersection between the two groups that the interaction term will capture. Similarly, as public interest in the topic drives academic work, I think this will again be primarily driven in the aforemetioned author groups and research domain."}, {"id": "student-47", "name": "phd_contributor_9b8k7", "x": 0.20100124859908125, "y": 0.7996982310057916, "degree": 0, "words": 36, "explanation": "In all three, being female is the common denominator; especially being a (cis or trans) woman in social science. For black women it is even much more probable and also when society's focus revolves around inequality"}, {"id": "student-48", "name": "phd_contributor_9pm5a", "x": 0.43216304643028364, "y": 0.5392029812041724, "degree": 6, "words": 59, "explanation": "For social science and female authors, both of them can predict that a paper is likely discussing gender inequality; however, if both appear simultaneously, it will strengthen this probability. As for inequality phenomena, they are in themselves a very strong indicator and almost certainly appear in social science papers, so the interaction term will lead to a negative sign."}, {"id": "student-49", "name": "phd_contributor_2rhpt", "x": 0.45675906445105596, "y": 0.2904224511609645, "degree": 1, "words": 342, "explanation": "For social science and female, I gave it a positive sign because those two things feed into each other. A woman has lived through gender dynamics her whole life. She does not need to read about it in a textbook to understand that inequality exists. But having that awareness does not automatically mean she writes about it. That depends on whether her field treats gender as a real research topic. Social science does. There are journals dedicated to it, conferences, whole subfields built around these questions. So when someone with lived experience lands in a space that says this work matters, it pushes things forward in a way that neither factor would alone. For natural science and female, I went with a negative sign because the dynamic is different. The lived experience is still there. A woman in natural science still navigates a world where gender shapes how she is treated. But natural science is not set up to make that the subject of research. The questions that count are about something else, cells or particles or equations. So even if she cares deeply, even if she experiences inequality every day, the field does not give her permission to write about it. The personal impulse is still there, but the disciplinary norms push against it. They weaken what would otherwise be there. For news mentions and paper mentions, I chose a positive sign because public conversation and academic conversation do not happen in isolation. When gender inequality is all over the news, whether it is the MeToo movement or stories about the pay gap, it makes the topic feel like something that matters right now. Researchers are paying attention to the same headlines everyone else is. That seeps into what they write. At the same time, when papers start talking about inequality more, it creates a kind of momentum. Scholars look at what is being published and where the field is heading. Those two forces feed each other. The topic stays alive in both places, and each one keeps the other going."}, {"id": "student-50", "name": "phd_contributor_z9ezk", "x": 0.22954888838572052, "y": 0.2629176832496343, "degree": 1, "words": 76, "explanation": "Public discussion of gender inequality (IV) is the external factor that fosters more research on gender inequality. Social science journals are the relevant target goal for submission (positive M1). Female researchers are more likely to pay attention, observe, or even experience the gender inequality; they are also often have more access to female interviewees or participants in studies (positive M1). The number of authors increases their access to female interviewees or participants in studies (positive M3)"}, {"id": "student-51", "name": "phd_contributor_z2j87", "x": 0.3098076480842919, "y": 0.41199391008254466, "degree": 17, "words": 84, "explanation": "Social science papers with female authors are more likely to discuss gender inequality because female researchers in social sciences often have direct experience with and academic interest in gender disparities. When news coverage of inequality increases, both female authors and social science researchers are more responsive to these public discourses, reinforcing each other's influence on the likelihood of discussing gender inequality. These interactions are positive because the combined presence of these features amplifies attention to gender issues beyond what each factor would predict independently."}, {"id": "student-52", "name": "phd_contributor_872ey", "x": 0.29666197013688006, "y": 0.43732652271930184, "degree": 7, "words": 142, "explanation": "For the first relation, I think most papers on gender inequality are from the field of social science, so they further reinforce each other's influence. On the other hand, if a paper falls in a period of 3 years with gender inequality being a trendy topic (i.e. high paper_inequality_mentions_3_years) and yet is from an engineering field, such former information becomes much less relevant. Lower country_race_diversity_score would imply that the authors are from countries with unbalanced gender ratio. If most of the authors on the author list are females, they probably have experienced such gender inequality, thereby caring about this topic more. Hence, the paper has higher chance of discussing gender inequality. Among races with high gender inequality, people from Asian countries also care about education. Hence, an author list with high percentage of female Asian co-authors may more likely discuss gender inequality."}, {"id": "student-53", "name": "phd_contributor_7trlj", "x": 0.18966253428641813, "y": 0.316188104902122, "degree": 3, "words": 66, "explanation": "Female authors's probability of publishing a paper on gender inequality might increase if there is a period of heightened media coverage of inequality. Being in an engineering and technology domain might decrease a female author's probability of publishing a paper about gender inequality. If there is a period of high news coverage of inequality, social science journals editors's probability of publishing gender inequality paper might increase"}, {"id": "student-54", "name": "phd_contributor_1nw3h", "x": 0.39811611106744843, "y": 0.495753242851905, "degree": 6, "words": 244, "explanation": "The most important interactions are all related to gender (female), because the question of interest here is to predict whether the paper is about gender inequality. If there are more recent papers regarding inequality, then there is a growing academic interest in issues regarding gender inequality. Under this condition, having more females on the list leads to a larger chance of discussing gender inequality issues. Therefore, the effect of having more females is more pronouced. Conversely, if the author list has more females, then the effect of having more recent papers regarding gender inequality would also be pronouced. Similarly, if there are more recent news regarding inequality, then there is a growing societal interest in issues regarding gender inequality. Under this condition, females are more likely to have a recent direct witness/experience with such issues. As such, having more females on the list leads to a larger chance of discussing gender inequality issues. Therefore, the effect of having more females is more pronouced. Conversely, if the author list has more females, then the effect of having more recent news regarding gender inequality would also be pronouced. Lastly, under the condition that the paper is about social science, having more females on the author list makes it more possible for the paper to be about gender inequality. Conversely, under the condition that there are more females on the author list, if the paper is in social science, more likely it will be about gender inequality."}, {"id": "student-55", "name": "phd_contributor_0r0es", "x": 0.4356759401084238, "y": 0.412839243590544, "degree": 18, "words": 145, "explanation": "The selected interaction effects reflect complementarities between author characteristics, disciplinary context, and broader research trends in shaping the likelihood that a paper discusses gender inequality. First, the interaction between female and social_science is positive because these two factors mutually reinforce each other: social science disciplines are inherently more oriented toward studying inequality, and a higher presence of female authors further amplifies attention to gender-related issues through perspective diversity and lived experience. Second, the interaction between female and paper_inequality_mentions_3_years is also positive, as female representation makes research teams more responsive to rising academic interest in inequality topics, translating general trends into more focused gender inequality discussions. Finally, the interaction between social_science and paper_inequality_mentions_3_years is positive because social science fields are more sensitive to shifts in scholarly discourse; when inequality becomes more salient in recent literature, these disciplines are more likely to absorb and intensify this trend."}, {"id": "student-56", "name": "phd_contributor_ly6qj", "x": 0.20819640517907184, "y": 0.45819632579852093, "degree": 7, "words": 70, "explanation": "Women authors writing in social science journals are more likely to be writing about gender inequality than women authors more broadly. Social science journals are likely to publish more on gender inequality when papers and news include this topic. Here, we'll also get a higher probability that a paper discusses racial inequality, but more of these papers should be on gender, given that, to date, that has been the trend."}, {"id": "student-57", "name": "phd_contributor_drr4r", "x": 0.13866519724087067, "y": 0.4060355499985738, "degree": 1, "words": 63, "explanation": "First, in my observations, white females are more likely to pursue gender inequality topics *as academic publications*. Second, the intellectual pursuit of natural sicence or engineering has almost nothing to do with gender. Third, gender inequality is a popular academic topic in social science in recent years, and I see scholars (non-female) who pursue gender inequality research topics mainly because of this reason."}, {"id": "student-58", "name": "phd_contributor_u3rga", "x": 0.35909465680018055, "y": 0.3580203287443963, "degree": 7, "words": 113, "explanation": "I expect higher shares of female authors on social science papers will produce a higher likelihood of gender inequality mentions as this is the topical domain that seems interested in these issues and females are more likely to want to work on these topics within that domain. I expect more authors on social science papers to produce a higher outcomes as papers by more authors in natural sciences or engineering and technology may not any effect, so we can absorb this in the interaction term. I expect papers by females in the natural sciences to (partly) bifurcate the natural science literature into those that focus on health/biology related issues and those that don't."}, {"id": "student-59", "name": "phd_contributor_5cv1y", "x": 0.429595470914995, "y": 0.636799314265589, "degree": 0, "words": 115, "explanation": "Although the black score is only a weak predictor of whether the paper discusses gender inequality, I believe the second-order interaction between the black score and the social_science score is strong. This is due to my belief that black authors in social science tend to study topics related to societal and cultural issues, such as gender identity, inequality, racism, and cultural studies. An inverse argument applies to the second-order interaction between the white score and the social_science score. A similar argument applies to the second-order interaction between female score and social_science score. This is because gender inequality benefits males and harms females, and therefore it is likely to be pointed out (and studied) by females."}], "links": [{"source": "student-0", "target": "student-1", "similarity": 0.8268}, {"source": "student-0", "target": "student-6", "similarity": 0.8179}, {"source": "student-0", "target": "student-21", "similarity": 0.7859}, {"source": "student-0", "target": "student-23", "similarity": 0.8058}, {"source": "student-0", "target": "student-26", "similarity": 0.8352}, {"source": "student-0", "target": "student-29", "similarity": 0.8043}, {"source": "student-0", "target": "student-41", "similarity": 0.7978}, {"source": "student-0", "target": "student-51", "similarity": 0.8484}, {"source": "student-0", "target": "student-52", "similarity": 0.8045}, {"source": "student-0", "target": "student-53", "similarity": 0.79}, {"source": "student-0", "target": "student-55", "similarity": 0.8095}, {"source": "student-0", "target": "student-56", "similarity": 0.8438}, {"source": "student-0", "target": "student-58", "similarity": 0.8276}, {"source": "student-1", "target": "student-23", "similarity": 0.8042}, {"source": "student-1", "target": "student-26", "similarity": 0.7889}, {"source": "student-1", "target": "student-41", "similarity": 0.8251}, {"source": "student-1", "target": "student-51", "similarity": 0.8617}, {"source": "student-1", "target": "student-56", "similarity": 0.8226}, {"source": "student-1", "target": "student-57", "similarity": 0.791}, {"source": "student-6", "target": "student-7", "similarity": 0.7874}, {"source": "student-6", "target": "student-23", "similarity": 0.8143}, {"source": "student-6", "target": "student-26", "similarity": 0.79}, {"source": "student-6", "target": "student-51", "similarity": 0.7909}, {"source": "student-6", "target": "student-52", "similarity": 0.819}, {"source": "student-6", "target": "student-53", "similarity": 0.7938}, {"source": "student-6", "target": "student-56", "similarity": 0.7874}, {"source": "student-6", "target": "student-58", "similarity": 0.8418}, {"source": "student-12", "target": "student-21", "similarity": 0.8501}, {"source": "student-12", "target": "student-25", "similarity": 0.8021}, {"source": "student-12", "target": "student-26", "similarity": 0.8007}, {"source": "student-12", "target": "student-30", "similarity": 0.829}, {"source": "student-12", "target": "student-34", "similarity": 0.793}, {"source": "student-12", "target": "student-35", "similarity": 0.8602}, {"source": "student-12", "target": "student-38", "similarity": 0.8683}, {"source": "student-12", "target": "student-41", "similarity": 0.7884}, {"source": "student-12", "target": "student-48", "similarity": 0.8055}, {"source": "student-12", "target": "student-55", "similarity": 0.8513}, {"source": "student-14", "target": "student-38", "similarity": 0.809}, {"source": "student-14", "target": "student-55", "similarity": 0.8046}, {"source": "student-17", "target": "student-35", "similarity": 0.7899}, {"source": "student-17", "target": "student-55", "similarity": 0.7881}, {"source": "student-20", "target": "student-30", "similarity": 0.7954}, {"source": "student-20", "target": "student-38", "similarity": 0.8124}, {"source": "student-20", "target": "student-55", "similarity": 0.7889}, {"source": "student-21", "target": "student-25", "similarity": 0.8064}, {"source": "student-21", "target": "student-26", "similarity": 0.8101}, {"source": "student-21", "target": "student-30", "similarity": 0.8272}, {"source": "student-21", "target": "student-35", "similarity": 0.8799}, {"source": "student-21", "target": "student-38", "similarity": 0.8642}, {"source": "student-21", "target": "student-40", "similarity": 0.7863}, {"source": "student-21", "target": "student-41", "similarity": 0.833}, {"source": "student-21", "target": "student-48", "similarity": 0.7887}, {"source": "student-21", "target": "student-51", "similarity": 0.8063}, {"source": "student-21", "target": "student-54", "similarity": 0.7874}, {"source": "student-21", "target": "student-55", "similarity": 0.8488}, {"source": "student-23", "target": "student-26", "similarity": 0.8043}, {"source": "student-23", "target": "student-41", "similarity": 0.7889}, {"source": "student-23", "target": "student-51", "similarity": 0.7866}, {"source": "student-23", "target": "student-52", "similarity": 0.8293}, {"source": "student-23", "target": "student-56", "similarity": 0.8107}, {"source": "student-25", "target": "student-26", "similarity": 0.8006}, {"source": "student-25", "target": "student-30", "similarity": 0.8584}, {"source": "student-25", "target": "student-38", "similarity": 0.8397}, {"source": "student-25", "target": "student-41", "similarity": 0.8111}, {"source": "student-25", "target": "student-51", "similarity": 0.7959}, {"source": "student-25", "target": "student-55", "similarity": 0.8137}, {"source": "student-26", "target": "student-29", "similarity": 0.7914}, {"source": "student-26", "target": "student-30", "similarity": 0.8424}, {"source": "student-26", "target": "student-33", "similarity": 0.7837}, {"source": "student-26", "target": "student-38", "similarity": 0.8526}, {"source": "student-26", "target": "student-41", "similarity": 0.788}, {"source": "student-26", "target": "student-44", "similarity": 0.7908}, {"source": "student-26", "target": "student-48", "similarity": 0.7874}, {"source": "student-26", "target": "student-51", "similarity": 0.8347}, {"source": "student-26", "target": "student-52", "similarity": 0.8597}, {"source": "student-26", "target": "student-54", "similarity": 0.8063}, {"source": "student-26", "target": "student-55", "similarity": 0.8671}, {"source": "student-26", "target": "student-56", "similarity": 0.8248}, {"source": "student-26", "target": "student-58", "similarity": 0.8314}, {"source": "student-28", "target": "student-52", "similarity": 0.7848}, {"source": "student-29", "target": "student-51", "similarity": 0.8119}, {"source": "student-29", "target": "student-56", "similarity": 0.8153}, {"source": "student-30", "target": "student-35", "similarity": 0.8057}, {"source": "student-30", "target": "student-38", "similarity": 0.8738}, {"source": "student-30", "target": "student-40", "similarity": 0.7872}, {"source": "student-30", "target": "student-51", "similarity": 0.8066}, {"source": "student-30", "target": "student-54", "similarity": 0.8131}, {"source": "student-30", "target": "student-55", "similarity": 0.8567}, {"source": "student-34", "target": "student-35", "similarity": 0.8001}, {"source": "student-35", "target": "student-38", "similarity": 0.8854}, {"source": "student-35", "target": "student-40", "similarity": 0.7965}, {"source": "student-35", "target": "student-41", "similarity": 0.799}, {"source": "student-35", "target": "student-55", "similarity": 0.8952}, {"source": "student-35", "target": "student-58", "similarity": 0.7895}, {"source": "student-37", "target": "student-52", "similarity": 0.7892}, {"source": "student-38", "target": "student-41", "similarity": 0.8516}, {"source": "student-38", "target": "student-48", "similarity": 0.7882}, {"source": "student-38", "target": "student-49", "similarity": 0.7923}, {"source": "student-38", "target": "student-51", "similarity": 0.8485}, {"source": "student-38", "target": "student-54", "similarity": 0.8003}, {"source": "student-38", "target": "student-55", "similarity": 0.9295}, {"source": "student-38", "target": "student-58", "similarity": 0.7915}, {"source": "student-40", "target": "student-55", "similarity": 0.7876}, {"source": "student-41", "target": "student-48", "similarity": 0.79}, {"source": "student-41", "target": "student-51", "similarity": 0.8677}, {"source": "student-41", "target": "student-55", "similarity": 0.819}, {"source": "student-48", "target": "student-55", "similarity": 0.7998}, {"source": "student-50", "target": "student-51", "similarity": 0.7862}, {"source": "student-51", "target": "student-53", "similarity": 0.7852}, {"source": "student-51", "target": "student-54", "similarity": 0.7858}, {"source": "student-51", "target": "student-55", "similarity": 0.8287}, {"source": "student-51", "target": "student-56", "similarity": 0.8455}, {"source": "student-51", "target": "student-58", "similarity": 0.797}, {"source": "student-52", "target": "student-55", "similarity": 0.7928}, {"source": "student-54", "target": "student-55", "similarity": 0.8201}, {"source": "student-55", "target": "student-58", "similarity": 0.8077}]}, {"id": "senior", "title": "Senior Scientists (n=13)", "color": "#F4A261", "nodes": [{"id": "senior-0", "name": "senior_contributor_zi680", "x": 0.49166052463162474, "y": 0.5582322808988054, "degree": 2, "words": 148, "explanation": "I chose social_science × female as the most important and positive interaction because gender inequality is a core topic in many social science areas, and social science norms make it more acceptable and expected to frame work around gender. If women are also more likely to pursue gender-related questions, that tendency should show up most strongly in social science, so the female association becomes larger there. Second, I chose social_science × news_inequality_mentions_3_years with a positive sign because when inequality is more salient in the public discourse, it becomes more top of mind, and that news-to-paper translation should be strongest in social science where inequality framing is already common. Third, I chose white × paper_inequality_mentions_3_years with a positive sign because I believe white people tend to pursue more central topics in science, so as the paper count increases in a topic like gender, the more whites will be represented."}, {"id": "senior-1", "name": "senior_contributor_tjek9", "x": 0.3073995557317434, "y": 0.3137121914533946, "degree": 1, "words": 98, "explanation": "I think women are more likely to publish on gender inequality (because it is self-relevant), but that this effect is more pronounced within the social sciences (because the counterforces in other fields, i.e., lack of field-relevance, would be too strong to allow the self-relevance to change behavior). I predict that the public discourse which leads to increased 3-year mentions in news and papers to predict more publishing on gender inequality, but that this effect is more pronounced within the social sciences, where gender inequality is relevant enough to those disciplines for public/field-level discourse to shift what people submit."}, {"id": "senior-2", "name": "senior_contributor_mkvct", "x": 0.18298848443570886, "y": 0.6309747093417253, "degree": 1, "words": 186, "explanation": "I assume that the effect of % (female) on mentioning gender inequality will be weakened the more authors are on the paper. The effect could be curvilinear, of course (for papers with more than 3-4 authors it would look very different and will just depend on the direction (and attributes) of the corresponding / senior authors. Specifically, I imagine that mixed sex paper may in fact be MORE likely to mention gender inequality than single-sex papers, as a form of virtue signalling and/or self-selection of individuals forming allyships. I assume white females will be especially likely to signal matters of gender inequality in their papers, treating it as the most important issue, while ethnically diverse females less so, in part because other matters (and types of inequality/prejudice) would crowd out the gender-related concerns in the discussion papers (considerations of limited space, which parts to focus on...). I assume that gender inequality may be less of a concern in discussion sections and other sections of papers, the more black coauthors are on them, because the latter will be more likely to focus on other forms of inequality."}, {"id": "senior-3", "name": "senior_contributor_jakh3", "x": 0.08, "y": 0.5046664249546585, "degree": 0, "words": 106, "explanation": "Women gravitate towards issues of inequality, but white women are less engaged with race (and may be considered less credible to publish on this...white fragility). So, women who are white are more likely to publish on gender inequality issues. Social science journals that publish research with multiple authors are more likely to publish gender inequality papers (although, I admit I do not have a good theoretical rationale for this). It could be either black or hispanic, but for similar reasons, we are more likely to see women who identify as hispanic conducting research on gender inequality, in part because they can build upon the intersectionalities present."}, {"id": "senior-4", "name": "senior_contributor_unrjy", "x": 0.36667372910349333, "y": 0.7083980192322327, "degree": 0, "words": 49, "explanation": "Social science, female, and black are most likely to contain authors that would be motivated to study inequality, while white would be less likely. An overlap of two of these groups would create a strong positive interaction (social science, female, black) or negative interaction (white) in predicting the same."}, {"id": "senior-5", "name": "senior_contributor_ogh5x", "x": 0.9199999999999999, "y": 0.9199999999999999, "degree": 0, "words": 18, "explanation": "Again, I am not confident in predicting interactions and only chose them because the survey forced me to."}, {"id": "senior-6", "name": "senior_contributor_ecdev", "x": 0.16642616858951442, "y": 0.35030420710482585, "degree": 0, "words": 47, "explanation": "Because most gender inequality research gets published in social science journals, being female, having high racial diversity among the authors, and recent popularity of the topic probably have little relation to gender inequality topic in non-social science disciplines, but probably have larger positive effects within social science"}, {"id": "senior-7", "name": "senior_contributor_mxspa", "x": 0.45539762032476117, "y": 0.3934078873944898, "degree": 2, "words": 131, "explanation": "For social science × female author share, the positive sign follows a similar rationale as for race reflecting own-group research effects for female scholars are only meaningfully activated within social science where journals, funding, and established communities support gender inequality research. For social science × news inequality mentions, the positive sign reflects that salience in news have a stronger effect on social science researchers than other disciplines as they are more motivated to respond to greater media coverage of gender injustice and so the two reinforce each other’s effects. For news × paper inequality mentions, the positive sign follows from the same logic again: greater news coverage motivates researchers while a literature already full of inequality discourse lowers publication barriers. When both conditions are present simultaneously, they should have compounding effects."}, {"id": "senior-8", "name": "senior_contributor_h1ror", "x": 0.3308500437947623, "y": 0.5092143471636118, "degree": 1, "words": 51, "explanation": "I expect discipline and author gender to interact such that female authorship will increase the likelihood of a paper being about gender inequality much more so in the social sciences than in the natural sciences. Likewise, news attention will have more predictive power if the paper is in the social sciences."}, {"id": "senior-9", "name": "senior_contributor_uhvrz", "x": 0.540332758117133, "y": 0.21626645256703464, "degree": 0, "words": 87, "explanation": "I expect that the relevance of news mentions will be more pronounced for female scholars because the updates will be more salient for them. Similarly, I think the social sciences will be particularly fertile ground for these studies, and that female scientists will be more likely to pursue such studies in that domain compared to other. I also thing there will be a somewhat curvilinear effect of prior mentions in the social sciences where a trend will emerge reaching a critical mass before dropping off later on."}, {"id": "senior-10", "name": "senior_contributor_5cvcm", "x": 0.526567703539735, "y": 0.4308650173620734, "degree": 2, "words": 124, "explanation": "social science x paper_inequality_mentions_3_years: The positive effect of this interaction should be likely as the advancement of scientific knowledge is often shaped by paradigms that guide which topics are seen as important and legitimate (Kuhn, 1997). In addition, higher levels of prior inequality-related research may signal greater funding availability for these topics (including both gender and ethnic inequalities), which can further encourage subsequent work. social science x news_inequality_mentions_3_years: The positive effect of this interaction is likely because news attention to inequality may make inequality-related issues more salient in society, affecting trends in academic research. social science x female: The logic here is simply the combination of two positive effects. social science x female: The logic here is simply the combination of two positive effects."}, {"id": "senior-11", "name": "senior_contributor_8pxf3", "x": 0.24611718561225243, "y": 0.4682202664843784, "degree": 3, "words": 168, "explanation": "(1) I expect female authors to be more likely to mention gender inequality, and this effect will be stronger when there is a higher interest in the society in these topics. The main reason in my opinion is that such interest increases both data availability as well as the perceived legitimacy of engaging with these topics. (2) I expect female authors to be more likely to mention gender inequality, and this effect will be stronger when there is a higher academic interest (i.e. paper mentions) in these topics. The main reason in my opinion is that such interest increases both data availability as well as the perceived legitimacy of engaging with these topics. (3) I expect authors in the social science to be more likely to study gender inequality than those in the natural sciences or engineering. This will be more so for female authors. I don’t think this is a strong effect, though. If it exists it is driven by perceived legitimacy of engaging with the topic."}, {"id": "senior-12", "name": "senior_contributor_wylyg", "x": 0.27877234289630803, "y": 0.08, "degree": 0, "words": 41, "explanation": "As above, I think that personal and social context shapes the relevance of gender as a field of study, but those contextual factors are most likely to shape articles in social sciences where the study of gender inequality is most relevant."}], "links": [{"source": "senior-0", "target": "senior-7", "similarity": 0.7854}, {"source": "senior-0", "target": "senior-10", "similarity": 0.7981}, {"source": "senior-1", "target": "senior-11", "similarity": 0.8009}, {"source": "senior-2", "target": "senior-11", "similarity": 0.7919}, {"source": "senior-7", "target": "senior-10", "similarity": 0.8084}, {"source": "senior-8", "target": "senior-11", "similarity": 0.8024}]}, {"id": "GenAI", "title": "GenAI (n=25)", "color": "#66BB6A", "nodes": [{"id": "GenAI-0", "name": "GPT_5.3_instant", "x": 0.2709277068157769, "y": 0.5634577714071726, "degree": 24, "words": 237, "explanation": "I expect the most important second-order interactions for gender inequality to involve the joint effects of author gender composition, disciplinary context, and broader academic discourse trends. My first choice, female × social_science, is positive because I assume that a higher share of women authors is especially likely to translate into explicit discussion of gender inequality in fields where such topics are already institutionally legitimate, theoretically developed, and publishable. In other words, author positionality should matter more when the disciplinary environment supports turning that perspective into a recognized research agenda. My second choice, social_science × paper_inequality_mentions_3_years, is also positive because rising inequality attention in academia should have its strongest effect in disciplines already oriented toward social problems, where scholars are more likely to adopt inequality-related concepts and vocabulary in titles and abstracts. My third choice, female × paper_inequality_mentions_3_years, is likewise positive because I assume that female authors may be more responsive, on average, to periods when inequality becomes more salient in academic discourse, making them more likely to frame their work explicitly around gender inequality when that broader scholarly language is available and legitimate. Overall, my reasoning is that these interactions are especially important because the effect of any one factor is not isolated: who the authors are, what kind of discipline they work in, and what topics are currently salient in academia likely reinforce one another in shaping whether gender inequality is explicitly named in a paper."}, {"id": "GenAI-1", "name": "GPT_5.2_instant", "x": 0.18597121044569015, "y": 0.08, "degree": 20, "words": 200, "explanation": "I expect disciplinary context to condition both author-composition effects and temporal discourse effects, which is why the most important interactions involve social_science. First, the positive interaction between social_science and female author share reflects a contextual activation mechanism: women scholars may be more inclined to study gender inequality, but this inclination is most likely to translate into explicit gender-inequality language when they are embedded in disciplines where gender is already a central and legitimate analytic category. In fields less oriented toward structural inequality, standpoint-related motivations may have fewer institutional outlets. Second, the positive interaction between social_science and prior academic inequality trends reflects field amplification: when inequality discourse rises across academia, social science disciplines—given their theoretical traditions in stratification and power—are especially likely to intensify and formalize that trend in published work. Third, the positive interaction between female author share and news inequality trends reflects a mobilization or responsiveness mechanism: heightened public discourse around gender discrimination may particularly activate scholars who are more directly affected or socially connected to gender issues, strengthening the relationship between news salience and gender-focused research output. Overall, I assume that disciplinary environments amplify both compositional and temporal effects, and that representation conditions responsiveness to societal inequality shocks."}, {"id": "GenAI-2", "name": "Gemini_3_fast", "x": 0.5811212563313141, "y": 0.8746560064572401, "degree": 24, "words": 185, "explanation": "My selection of these interactions is based on the theory of contextual amplification, which posits that the effect of an author's identity or interest is not static but is magnified by their institutional and social environment. I ranked the interaction between female and social_science first because the probability of using gender-specific keywords is highest when the author's likely lived experience (inferred via the female score) aligns with a disciplinary environment that provides the necessary specialized vocabulary, such as \"patriarchy\" or \"sex discrimination.\" The interaction between female and news_inequality_mentions_3_years carries a positive sign because I assume a social responsiveness effect, where female authors are more likely to channel their research toward gender-specific topics in response to high-velocity public discourse on inequality. Finally, the interaction between engineering_and_technology and female is prioritized because it captures the \"diversification of STEM\" discourse; in technical fields that usually avoid social keywords, the presence of female authors serves as a critical catalyst for introducing topics like gender bias in algorithms or technology, making this demographic factor a more potent predictor in engineering than in fields where such discussions are already the baseline."}, {"id": "GenAI-3", "name": "Claude_sonnet4.6", "x": 0.6404363671430269, "y": 0.18028665869717866, "degree": 24, "words": 369, "explanation": "The three interactions I selected for the gender inequality case reflect the same overarching theoretical logic as in the racial inequality case — that predictors of inequality scholarship are mutually conditioning rather than independent — but with important gender-specific nuances that arise from the distinct structural position of gender as a social category cutting across all disciplines. The most important interaction, female × social_science, rests on the same institutional scaffolding assumption as its racial analogue: positionality-driven research motivation is a necessary but not sufficient condition for producing keyword-containing academic output, and it is most powerfully activated when coupled with a disciplinary environment that provides feminist conceptual frameworks, methodological legitimacy, receptive publication outlets, and peer communities that normalize and reward gender inequality scholarship. Female scholars in engineering or natural science may be equally motivated by personal experience of gender inequality but lack the institutional infrastructure to channel that motivation into the specific critical vocabulary our labeling scheme detects. The second interaction, female × news_inequality_mentions_3_years, captures an identity-contingent agenda responsiveness mechanism: landmark public events in gender inequality discourse — #MeToo, the gender pay gap debate, reproductive rights controversies — carry differential salience for scholars who are personally embedded in the social relations these events illuminate. Female scholars are more likely to experience such moments as urgent professional calls to action, amplifying their already-higher baseline propensity to produce gender inequality research during periods of heightened public attention, in a way that male scholars — even those sympathetic to gender equality — are less likely to do with the same intensity. The third interaction, female × engineering_and_technology, introduces a suppression dynamic that has no direct parallel in the racial inequality predictions and reflects a gender-specific theoretical consideration: engineering disciplines impose particularly strong norms of technical neutrality and objectivity that function as discursive gatekeepers, actively discouraging critical social framing even among scholars who personally experience gender inequality. Female engineers may discuss gender in their work — addressing representation gaps, pipeline leakage, or workplace climate — but the disciplinary grammar of engineering steers this discussion away from the critical feminist vocabulary that triggers positive classification in our labeling scheme, substantially dampening the positive effect of female authorship that operates so powerfully in social science contexts."}, {"id": "GenAI-4", "name": "Grok4_fast", "x": 0.42161330691549065, "y": 0.15820735480740225, "degree": 24, "words": 268, "explanation": "Here is my response for Q Gender.10: The three second-order interactions I ranked as most important for predicting gender inequality keyword mentions center on the amplifying role of disciplinary context, because social science fields have long served as the primary institutional home for feminist theory, gender studies, and critiques of patriarchy and sexism. The strongest interaction—social_science × female (+)—occurs because the positive effect of a higher female author share on adopting gender inequality language is substantially magnified within social sciences, where women scholars encounter stronger normative support, specialized networks, dedicated subfields (e.g., gender sociology or feminist psychology), and lower professional risks for centering topics like “sexism,” “gender stereotypes,” or “patriarchy”; outside social sciences this demographic effect remains positive but much weaker. Ranked second is social_science × paper_inequality_mentions_3_years (+), as the recent academic climate of inequality discourse exerts far greater influence when a paper is situated in social science journals and communities that already reward and normalize gender-framed scholarship, creating a multiplier effect absent or muted in natural sciences or engineering. Third is social_science × news_inequality_mentions_3_years (+), reflecting that external media salience around gender issues translates more readily into academic abstracts and titles within disciplines that are culturally open to broader social movements and public discourse. My assumptions rest on the view that field-specific cultures act as powerful moderators: social sciences function as “incubators” where author gender composition and broader discursive signals are converted into explicit gender inequality framing much more intensely than in harder fields, producing large positive interaction effects while the main effects of female share and climatic variables persist at a lower level outside that context."}, {"id": "GenAI-5", "name": "Grok4_expert", "x": 0.445542959556881, "y": 0.2445512880217403, "degree": 23, "words": 266, "explanation": "The three most important second-order interactions for predicting gender-inequality mentions all revolve around social_science as the dominant moderator because academic disciplines function as powerful institutional gatekeepers that determine what topics are considered legitimate, fundable, and publishable. The strongest interaction, social_science × female (+), arises from standpoint epistemology and historical patterns of feminist scholarship: higher estimated shares of female authors strongly elevate the use of gender-inequality keywords (patriarchy, sexism, gender stereotypes, gender biases, etc.) but almost exclusively within social-science journals (sociology, political science, psychology, gender studies), where lived-experience perspectives and feminist frameworks are rewarded and central to the agenda; in natural-science, engineering, or technology outlets the same author composition produces negligible effects due to differing norms and incentive structures. Similarly, social_science × authors_race_diversity_score (+) is second-most important because racially mixed author teams—captured by Shannon entropy on inferred country-of-origin racial probabilities—introduce complementary epistemic lenses that surface issues of gender inequality through intersectionality, yet this diversity benefit materializes only inside social-science venues that actively value and disseminate multi-axis identity scholarship; outside those fields even diverse teams default to gender-neutral framing. Finally, social_science × paper_inequality_mentions_3_years (+) ranks third because recent surges in overall academic inequality discourse generate strong path-dependent momentum (via citation networks, special issues, and funding), but this temporal amplification is confined to social-science disciplines that are far more responsive to scholarly fashion and societal signals than the more insulated natural-science or engineering fields. These interactions dominate because disciplinary boundaries act as the primary filter that either amplifies or nullifies the influence of author standpoint, team diversity, and cumulative academic climate on actual gender-inequality language in titles and abstracts."}, {"id": "GenAI-6", "name": "Mistral_balanced", "x": 0.46512391167118283, "y": 0.6259664678421687, "degree": 24, "words": 423, "explanation": "The selection and ranking of second-order interactions for predicting mentions of gender inequality in academic papers are grounded in theories of disciplinary norms, social identity, and the dynamic relationship between public discourse and scholarly research. The social_science × female interaction is considered the most important because it combines two of the strongest individual drivers of research focus: the disciplinary emphasis on gender and inequality, and the lived experiences or academic priorities of female authors. Social science fields, such as sociology, psychology, and gender studies, are explicitly designed to interrogate power structures, identity, and societal inequities, making them natural hubs for research on gender inequality. When female authors—who may have personal or professional stakes in gender issues—are part of these disciplines, the likelihood of addressing gender inequality is further amplified. This interaction reflects the idea that identity and disciplinary culture are not merely additive but multiplicative; the presence of female authors in social science contexts creates a synergistic effect, as their perspectives and priorities align with the field's focus on gender and inequality. The social_science × news_inequality_mentions_3_years interaction is ranked second because it captures how social science disciplines, which are already attuned to societal issues, respond to broader public discourse. When gender inequality is prominently discussed in the news, it signals a heightened societal awareness and urgency, which can prompt scholars in these fields to engage with the topic in their research. Social science disciplines are particularly responsive to public conversations, as their methodologies and theoretical frameworks are often designed to address contemporary social issues. This interaction assumes that the alignment of disciplinary focus with public discourse creates a powerful impetus for scholarly engagement with gender inequality, reflecting the field's commitment to both academic rigor and societal relevance. Finally, the female × authors_race_diversity_score interaction is ranked third, reflecting the intersectional dynamics that shape research agendas. Female authors, particularly those from diverse racial backgrounds, are more likely to bring intersectional perspectives to their work, recognizing how gender inequality intersects with other forms of marginalization. Diversity within author teams fosters a broader range of viewpoints and experiences, which can enrich the theoretical and empirical exploration of gender inequality. This interaction underscores the idea that diversity is not just a demographic feature but a catalyst for more nuanced and inclusive research. The positive sign for all these interactions assumes that the combination of female authorship, disciplinary focus, public discourse, and team diversity creates a fertile ground for addressing gender inequality in academic papers, highlighting the complex interplay of individual, disciplinary, and contextual factors in shaping research priorities."}, {"id": "GenAI-7", "name": "DeepSeek_expert", "x": 0.9174880252735651, "y": 0.4233302358063837, "degree": 21, "words": 577, "explanation": "My selection of these three interactions is organized around a core theoretical principle: the expression of author positionality is always contingent on the disciplinary context in which scholarship is produced, and the most analytically powerful interactions are those that capture how institutional structures either amplify or suppress the scholarly potential of lived experience. The most important interaction, social_science × female, embodies what I theorize as the essential synergy between experiential motivation and disciplinary opportunity. My foundational assumption is that while women scholars, on average, possess a heightened personal stake in understanding and challenging gender inequality due to their direct encounters with sexism, patriarchal norms, and structural disadvantage, this motivation alone is insufficient to produce published research on the topic. It requires a disciplinary home that recognizes gender as a legitimate category of scholarly inquiry, provides theoretical frameworks such as feminist theory or gender studies, and offers professional rewards for such work through sympathetic reviewers, dedicated journals, and receptive collegial networks. Social science disciplines furnish precisely this scaffolding, creating what I call an \"amplification zone\" where personal motivation is institutionally channeled and legitimated. The positive sign of this interaction thus captures a multiplicative rather than merely additive effect: a woman in sociology does not simply carry two independent positive predictors but operates in a context where her standpoint-derived insights are actively cultivated. The second-most important interaction, social_science × natural_science, operates at a deeper structural level that I term the epistemological divide. Its negative sign encodes the hard boundary between two incommensurable modes of knowledge production. I assume that academic disciplines are not merely different in degree but fundamentally different in kind when it comes to their object of study-social sciences are organized around understanding socially constructed realities, while natural sciences focus on biophysical processes that exist independently of human meaning-making. A paper's location in one domain categorically precludes the other, and since these domains have antithetical relationships to gender as a topic of formal inquiry, the interaction provides a powerful structural constraint that a purely additive model would miss. This is not a statistical nuance but a substantive representation of what sociologists of science recognize as the foundational boundary work that constitutes modern disciplines. The third interaction, female × natural_science, shifts the analytical focus to what I theorize as a mechanism of structural suppression. My reasoning here draws on a rich body of research on the position of women in male-dominated STEM fields, which documents a paradoxical dynamic. Women in these disciplines disproportionately experience the very phenomena-bias, exclusion, chilly climate-that constitute gender inequality, yet they face strong countervailing pressures that inhibit them from making these experiences the object of their formal scholarly work. I assume that these pressures operate through multiple channels: professional socialization that defines gender-focused research as less rigorous or central, strategic career concerns that discourage being pigeonholed as \"the woman who studies women,\" and the simple absence of mentors, reviewers, and departmental colleagues who would validate such inquiry. The negative sign of this interaction captures this dampening effect, where the motivation associated with female identity is actively suppressed rather than merely unrewarded, creating a silence that is especially pronounced given the heightened personal relevance of the topic. Together, these three interactions form a coherent theoretical architecture: the first identifies where standpoint-driven scholarship flourishes, the second demarcates the categorical boundary that constrains all social inquiry, and the third reveals where structural forces actively silence the very voices whose experience would otherwise propel attention to gender inequality."}, {"id": "GenAI-8", "name": "Claude_opus4.7", "x": 0.6805830716912391, "y": 0.4969136382338477, "degree": 24, "words": 249, "explanation": "My three interactions follow a single principle of complementarity: the drivers of gender-inequality discourse multiply rather than substitute, and disciplinary scope is the master conditioning variable that determines whether any other force can be expressed. The strongest interaction, social_science × female, rests on the assumption that author standpoint cannot operate without structural opportunity—a female scholar's heightened motivation to study gender only converts into a keyword-bearing paper when situated in a field whose journals, vocabulary, and reviewers treat gender inequality as legitimate subject matter; in technical or natural-science venues that same motivation has little outlet, so the two forces compound multiplicatively and the sign is positive. I place this above the others because gender is the most directly self-relevant identity axis and the female share is comparatively well-measured, making the interaction both theoretically potent and empirically clean. The second interaction, social_science × paper_inequality_mentions_3_years, applies the same conditionality to temporal salience: a rising tide of inequality attention across the literature can only lift papers in disciplines positioned to absorb it, so field-wide momentum and disciplinary fit reinforce one another positively while remaining largely inert in technical fields. The third, female × paper_inequality_mentions_3_years, captures within-person amplification: when the broader field signals that inequality work is timely, legitimate, and fundable, the latent standpoint motivation of women authors is further activated and de-risked, so identity and temporal opportunity compound positively. The unifying assumption throughout is that motivation, attention, and disciplinary opportunity are complementary inputs—each becomes most powerful precisely when the others are also present."}, {"id": "GenAI-9", "name": "Claude_opus4.7_adaptive", "x": 0.6482888133712754, "y": 0.3547977859473809, "degree": 24, "words": 388, "explanation": "These three interactions rest on the same governing principle I used for race — disciplinary membership is the enabling condition that converts latent forces into actual gender-inequality discourse — but the ordering shifts to reflect what I believe is an unusually strong, and unusually well-measured, standpoint effect. I treat `social_science` as a moderator, an ecology supplying the vocabulary, theoretical traditions, journals, and reviewers that make naming gender inequality legitimate and publishable; outside it, the same impulses lack a sanctioned outlet and their slopes flatten toward zero. This multiplicative-gating logic is why all three interactions are positive. The first and most important, `social_science × female` (+), encodes a standpoint-times-opportunity mechanism: female author share generates motivation and lived salience to study gender inequality, but that motivation becomes a published, keyword-bearing paper chiefly where the discipline affords the topic, so the female effect is amplified inside social science and muted in technical fields. I elevate this above the temporal interactions — reversing the priority I gave the analogous `social_science × black` term in the racial model — for two reasons: substantively, gender homophily in feminist and gender scholarship is especially strong, and methodologically, first-name gender inference is accurate enough that the interaction is not washed out by measurement error the way the noisy race imputation was. The second and third interactions, `social_science × paper_inequality_mentions_3_years` (+) and `social_science × news_inequality_mentions_3_years` (+), capture the temporal salience wave operating through a disciplinary filter: event-driven surges in attention to gender inequality (most clearly #MeToo from 2017) do not lift all fields equally, because only scholars whose discipline treats public gender problems as legitimate objects are positioned to ride the wave — reframing, launching, and citing the moment — while a technical paper remains largely insulated. I again rank the scholarly proxy above the media proxy because intra-academic topic cascades are the more proximate channel through which authors register what is \"current,\" with media salience acting one step upstream. The core assumption throughout is that authorial standpoint, scholarly fashion, and public attention are potentials whose realization is conditional on a permissive field, so their explanatory power surfaces in the interaction terms rather than in main effects alone — and that, between the two demographic standpoints, the gender one rises to the top of the interaction ranking precisely because it is the one we can measure cleanly."}, {"id": "GenAI-10", "name": "Qwen_3.6Plus_thinking", "x": 0.3273707672621423, "y": 0.8382925688392546, "degree": 24, "words": 305, "explanation": "These three interactions reflect synergistic mechanisms where author-level standpoint, disciplinary infrastructure, and team composition jointly amplify the likelihood of gender inequality mentions. First, `female × social_science` (+) is most important because standpoint epistemology operates most powerfully within disciplines that possess the theoretical infrastructure—feminist theory, gender stratification research, social psychology of sexism—to translate lived experience with gender-based marginalization into publishable scholarship; a woman scholar in engineering may face epistemic marginalization or methodological constraints when centering gender inequality, whereas the same scholar in sociology or psychology benefits from field-level validation, peer review norms, and journal ecosystems that reward critical gender analysis, creating a multiplicative rather than additive effect. Second, `female × paper_inequality_mentions_3_years` (+) captures how women scholars are uniquely positioned to leverage existing discursive momentum: recent inequality scholarship generates citation networks, special issues, and shared vocabularies that lower entry barriers, but women authors—due to greater familiarity with gender-focused literature, stronger ties to feminist scholarly communities, or heightened sensitivity to inequality discourse—are more likely to recognize and build upon this momentum, accelerating the production of gender inequality-focused work. Third, `authors_race_diversity_score × female` (+) posits that racially diverse teams led by or including women scholars are more likely to adopt intersectional frameworks that explicitly analyze gender alongside race, ethnicity, or other axes of stratification; this interaction reflects the theoretical insight that intersectionality emerges not merely from individual identity but from collaborative epistemic practices that center multiple, co-constitutive forms of marginalization. All three interactions carry positive signs because they represent reinforcing loops: structural advantages (disciplinary fit, author standpoint, team composition) and contextual enablers (recent scholarship) compound rather than substitute for one another. Key assumptions include that gender estimation via first names preserves rank-order variation despite noise, that disciplinary boundaries remain meaningful amid interdisciplinary growth, and that the post-2010s rise of #MeToo and gender equity discourse strengthens these interactions over time."}, {"id": "GenAI-11", "name": "Claude_opus4.8", "x": 0.5239188310673851, "y": 0.4106928068548835, "degree": 24, "words": 260, "explanation": "These interactions matter because the effect of any single predictor on gender-inequality discussion is conditional on the context in which it operates, reflecting a logic of complementarity among motivation, opportunity, and disciplinary legitimacy. The strongest interaction, social_science × female, rests on the assumption that a female author's standpoint motivation translates into published gender-inequality scholarship most readily when the disciplinary environment supplies the conceptual vocabulary and audience to support it; a woman working in social science finds both the means and the legitimacy to pursue gender questions, whereas the same author in a natural-science or engineering field faces structural constraints that suppress that effect, so the two factors reinforce one another and the interaction is positive. The second interaction, social_science × paper_inequality_mentions_3_years, captures the same conditional logic at the level of field discourse: a rising tide of inequality discussion in the broader literature is most consequential where the topic is already actionable, so social science fields convert favorable discursive opportunity into actual gender-inequality papers far more readily than fields where the topic is peripheral, yielding a positive sign. The third interaction, female × paper_inequality_mentions_3_years, assumes that women are especially responsive to the discursive opportunity structure—when inequality is salient in the recent scholarly conversation, female authors, already more attuned to gender disadvantage, are the most likely to seize that opening and frame their work accordingly, so motivation and opportunity amplify each other to produce a positive interaction. Across all three, the unifying premise is that gender-inequality discourse emerges most strongly where personal salience, favorable disciplinary norms, and a receptive intellectual climate co-occur."}, {"id": "GenAI-12", "name": "Claude_opus4.8_adaptive", "x": 0.7867005177308315, "y": 0.35328088327377394, "degree": 24, "words": 318, "explanation": "These three interactions rest on the same gating-and-amplification logic as my racial model, and all are positive for the same structural reason: each pairs a propensity with the condition that lets it express itself, yielding a super-additive joint effect. The most important, social_science × female, captures my belief that the gender standpoint mechanism is conditional on disciplinary opportunity—a woman's elevated propensity to study gendered disadvantage can only surface as gender-inequality keywords where the field supplies the concepts and publication venues for it. The interaction should be even cleaner and stronger than its racial counterpart (social_science × black) because the female signal is well-measured and high-variance, so the conditioning of standpoint on discipline is observed with far less attenuation; I therefore rank it first with high confidence. The second, social_science × paper_inequality_mentions, reflects an agenda-receptivity assumption: a rising tide of academic attention to inequality is converted into actual gender-inequality papers mainly in fields where the topic is admissible, so the discourse environment and disciplinary context multiply rather than merely add. The third, female × news_inequality_mentions, invokes moderated mobilization: public salience does not move all scholars equally, and women authors—by lived proximity to the issue—are the most responsive to moments when the public sphere foregrounds gender (the #MeToo surge being the paradigm case), so the standpoint and public-salience effects reinforce one another. I rank it third because the news measure is a broad, all-forms index that dilutes the specifically gendered signal, attenuating the observable interaction relative to the discipline-anchored pairs above it. I deliberately kept this triad parallel to my racial model rather than substituting a discipline-specific interaction such as engineering × female (which the ML-fairness \"gender bias\" literature might motivate), both because that path's sign is theoretically ambiguous and because preserving structural symmetry across the two tasks makes the one substantive contrast I do assert—female being a far more potent and reliably measured standpoint moderator than black—cleaner to interpret."}, {"id": "GenAI-13", "name": "Mistral_thinking", "x": 0.4747721658208712, "y": 0.5331617905192811, "degree": 24, "words": 167, "explanation": "The most important interaction, social_science × female, captures the synergy between disciplinary focus and author identity: social sciences provide the institutional and theoretical platform for gender inequality research, while female authors bring lived experiences and research interests, creating a multiplicative effect where the combination exceeds the sum of their individual contributions. The second interaction, social_science × news_inequality_mentions_3_years, reflects how social sciences are uniquely responsive to societal discourse; when gender inequality is prominent in the news, social scientists are primed to produce research addressing these themes, amplifying the effect of both variables. The third interaction, female × news_inequality_mentions_3_years, posits that female authors are particularly attuned to public conversations about gender issues and are thus more likely to respond academically when such topics gain prominence in the media. All interactions carry positive signs because each pair of factors is theorized to reinforce one another in increasing the likelihood of a paper discussing gender inequality, assuming that disciplinary norms, author identity, and temporal context are interdependent drivers of scholarly focus."}, {"id": "GenAI-14", "name": "Qwen_3.7Plus_thinking", "x": 0.4116918392738074, "y": 0.7418835830671784, "degree": 24, "words": 213, "explanation": "The selected second-order interactions highlight how disciplinary contexts, team dynamics, and academic momentum synergize with author demographics to shape research on gender inequality. First, the positive interaction between `female` and `social_science` is rooted in standpoint theory and the sociology of science; while female scholars are intrinsically motivated to study gender disparities, social science disciplines provide the necessary epistemological legitimacy, established feminist frameworks, and peer-review acceptance to formally investigate these issues, thereby amplifying their impact compared to STEM fields where technical norms may constrain such inquiries. Second, the positive interaction between `female` and `num_authors` draws on critical mass theory, assuming that a higher proportion of female authors in larger research teams creates a critical mass that shifts group dynamics, reduces individual marginalization, and empowers the team to confidently tackle gender-related topics, whereas a lone female author in a small team may face greater pressure to conform to traditional, non-gendered research agendas. Finally, the positive interaction between `social_science` and `paper_inequality_mentions_3_years` is based on the premise of academic path dependence; a robust existing literature lowers the barrier to entry for researching inequality, and social science disciplines are uniquely positioned to absorb and build upon this scholarly infrastructure, creating a compounding effect where disciplinary focus and academic momentum mutually reinforce the production of knowledge on gender inequality."}, {"id": "GenAI-15", "name": "GPT_5.5_thinking_standard", "x": 0.25603639771464753, "y": 0.4938762644061091, "degree": 24, "words": 189, "explanation": "I expect social_science × female to be the most important positive interaction because author positionality and disciplinary context should reinforce one another: a higher share of female authors may increase the likelihood of studying gender inequality, but this relationship should be strongest in social science fields where gender, discrimination, power, identity, and institutions are established research objects. I expect social_science × paper_inequality_mentions_3_years to be the second-most important positive interaction because recent academic inequality discourse should diffuse most strongly through fields that already have the theories, journals, and methods for studying inequality; when inequality language becomes more prominent in academia, social science papers should be especially likely to adopt gender inequality concepts and keywords. I expect female × news_inequality_mentions_3_years to be the third-most important positive interaction because public attention to inequality may particularly activate or amplify gender-related research agendas among women scholars, who may have stronger experiential, intellectual, or professional connections to topics such as sexism, gender bias, patriarchy, and sex discrimination. Overall, the positive signs reflect a complementarity argument: gender inequality mentions should be most likely when author identity, disciplinary receptivity, and broader discourse salience mutually reinforce one another."}, {"id": "GenAI-16", "name": "GPT_5.5_thinking_extended", "x": 0.19764886919122815, "y": 0.39567520740311324, "degree": 24, "words": 191, "explanation": "I chose these interactions because I expect the predictors of gender-inequality discourse to reinforce one another rather than operate independently. The interaction between social_science and female should be positive because female authorship is likely to matter most in fields where gender is already a legitimate object of theory, measurement, and publication. In social-science disciplines, women scholars may have both stronger motivation and greater institutional opportunity to study sexism, gender bias, patriarchy, representation, and discrimination; in more technical fields, the same author-gender composition may have less influence on whether the paper explicitly uses gender-inequality keywords. The interaction between social_science and paper_inequality_mentions_3_years should also be positive because prior academic inequality discourse is most likely to diffuse into new work in disciplines that already possess the concepts, methods, and journals for studying inequality. Finally, the interaction between female and paper_inequality_mentions_3_years should be positive because female-composed author teams may be especially likely to take up and extend emerging scholarly conversations about inequality when those conversations become more visible. Overall, these interaction choices assume that gender-inequality mentions are shaped by the combination of disciplinary receptiveness, author standpoint, and the broader academic opportunity structure surrounding inequality discourse."}, {"id": "GenAI-17", "name": "GPT_5.4_thinking_standard", "x": 0.2847901820072487, "y": 0.39305134785143453, "degree": 24, "words": 228, "explanation": "The three interactions I selected all rest on the assumption that gender-inequality discourse is most likely to emerge when author positionality and broader inequality salience are filtered through a field that already treats gender, power, identity, and discrimination as legitimate objects of analysis. I ranked female × social_science first because I expect the influence of female author share to be strongest where scholars also have access to established theories and vocabularies for naming sexism, patriarchy, stereotyping, and exclusion; in that context, women's representation on the author team should be especially likely to translate into explicit gender-inequality framing, which is why I assign a positive sign. I ranked social_science × paper_inequality_mentions_3_years second because I assume academic agenda diffusion is amplified in disciplines that are already oriented toward inequality research, so a rise in recent inequality-related scholarship should have an especially strong positive effect on gender-inequality mentions within social science. I ranked social_science × news_inequality_mentions_3_years third because social science fields are more porous to social movements, public controversies, and media debates than many other fields, making them especially likely to convert heightened news attention to inequality into scholarly discussion framed around gender inequality. Overall, my reasoning is that social science acts as an amplifier: it strengthens both the effect of female authorship and the effect of wider academic and public inequality salience on whether a paper explicitly discusses gender inequality."}, {"id": "GenAI-18", "name": "GPT_5.4_thinking_extended", "x": 0.3183562660731144, "y": 0.47676662784394747, "degree": 24, "words": 224, "explanation": "I think the most important interaction is social_science × female, and I assign it a positive sign because the effect of having more female authors should be strongest in fields where gender inequality is already a legitimate and familiar object of theorization. In other words, female authors may be more likely to bring attention to gendered power relations across many settings, but social science provides the language, concepts, and publication norms that make explicit terms such as sexism, stereotypes, discrimination, or patriarchy especially likely to appear in titles and abstracts. I rank social_science × paper_inequality_mentions_3_years second and also positive because rising inequality discourse in academia should diffuse most strongly into fields already oriented toward inequality as a core topic; social science should therefore amplify the effect of recent academic attention on whether a paper explicitly mentions gender inequality. I rank female × paper_inequality_mentions_3_years third and again positive because a broader rise in academic inequality discourse is likely to be translated into gender-inequality framing more strongly by teams with more female authors, who may be more attuned to those debates and more motivated to connect their work to them. Across all three interactions, my underlying assumption is that explicit mentions of gender inequality are most likely when author standpoint, disciplinary receptivity, and the broader academic discourse environment reinforce one another rather than operating in isolation."}, {"id": "GenAI-19", "name": "gemini_3.1_pro_standard", "x": 0.4706058376254301, "y": 0.9199999999999999, "degree": 23, "words": 190, "explanation": "My selections for the most critical second-order interactions rest on the intersection of institutional structures, epistemological standpoints, and exogenous cultural shocks. I ranked the interaction between `social_science` and `female` as the most important with a positive sign because it represents the optimal alignment of venue and motivation; while the social sciences provide the necessary academic framework to study stratification, author teams with a high proportion of female researchers are theoretically more likely to possess the lived experience and epistemological drive to investigate gender dynamics. Second, I selected the interaction between `social_science` and `news_inequality_mentions_3_years` with a positive sign to capture the disproportionate responsiveness of different disciplines to public discourse. A surge in news coverage regarding societal inequality primarily reshapes the research agendas within the social sciences, acting as a catalyst for institutional funding and publications in those specific fields while leaving natural and engineering sciences largely unaffected. Finally, the positive interaction between `female` and `news_inequality_mentions_3_years` ranks third, reflecting demographic mobilization. When public awareness of inequality increases, author teams with higher shares of female scholars are historically the most active in translating that cultural momentum into formalized academic literature on gender disparities."}, {"id": "GenAI-20", "name": "Theorista_GPT5.5_instant", "x": 0.1226926576764432, "y": 0.4654908967537918, "degree": 23, "words": 165, "explanation": "I expect the interaction between social_science and the share of female authors to be the strongest because gender inequality is a core topic within the social sciences, and teams with greater female representation may be especially likely to pursue research on gender-related issues in disciplines where such topics are theoretically and empirically well established. I also expect a positive interaction between social_science and paper_inequality_mentions_3_years, since academic trends are most likely to influence scholars working in fields that already focus on inequality. As gender inequality becomes more prominent in the literature, social scientists are particularly likely to build on this growing body of work. Finally, I expect a positive interaction between the share of female authors and news_inequality_mentions_3_years because heightened public attention to inequality may encourage researchers with relevant interests or lived experiences to investigate these issues. Overall, these interactions reflect the assumption that disciplinary context, researcher composition, and the broader academic and societal environment reinforce one another in shaping whether a paper discusses gender inequality."}, {"id": "GenAI-21", "name": "Theorista_GPT5.5_thinking_standard", "x": 0.11437610122976033, "y": 0.6033815757184714, "degree": 23, "words": 150, "explanation": "I chose these interactions because my theory is that gender-inequality mentions are most likely when author standpoint, disciplinary receptivity, and discursive availability mutually reinforce one another. The interaction `social_science × female` is ranked first and positive because a higher share of female authors should be especially likely to translate into explicit gender-inequality research in fields where gender, discrimination, sexism, and patriarchy are already legitimate objects of inquiry. The interaction `social_science × paper_inequality_mentions_3_years` is also positive because recent academic inequality discourse should diffuse most strongly into social-science fields, where scholars are more likely to recognize and extend inequality-related concepts. Finally, `female × paper_inequality_mentions_3_years` is positive because female authorship may matter more when the broader academic environment has already made inequality language salient, publishable, and theoretically available. In short, gender-inequality mentions should be highest when scholars with relevant standpoint or sensitivity operate in fields and periods where inequality discourse is institutionally supported."}, {"id": "GenAI-22", "name": "Qwen_3.8Max_thinking", "x": 0.9199999999999999, "y": 0.7424263058662779, "degree": 22, "words": 1372, "explanation": "The three interactions I selected—`female × social_science`, `news_inequality_mentions_3_years × social_science`, and `female × news_inequality_mentions_3_years`—are unified by a single theoretical conviction: gender inequality scholarship emerges not from any single cause in isolation but from the *convergence* of gendered identity, institutional context, and temporal-political opportunity, and it is precisely at the intersections of these forces that the probability of gender inequality discourse rises most sharply. I rank `female × social_science` first because I consider this interaction to be the most structurally fundamental and continuously operative. The underlying assumption is that the relationship between author gender and topic selection is not a simple additive main effect but is fundamentally *gated* by disciplinary context. Feminist standpoint theory (Harding, 1991; Hartsock, 1983; Smith, 1987) posits that women's lived experience under patriarchal social arrangements generates a distinctive epistemic position from which gender-based domination becomes visible as a structural problem requiring explanation. A woman scholar carries, through her own encounters with sexism, gender stereotypes, and institutional male dominance, what Dorothy Smith (1987) called a \"bifurcated consciousness\"—an awareness of the gap between the official, male-centered accounts of social life and the actual texture of women's experience. This awareness generates both the motivation to investigate gender inequality and the interpretive sensitivity to recognize it in empirical data. However, this epistemic advantage can only be converted into published scholarship when the institutional environment provides the conceptual language (patriarchy, gender performativity, the gender pay gap), the methodological infrastructure (validated scales for measuring sexism, qualitative protocols for capturing gendered experience), and the legitimating norms (peer reviewers who recognize gender inequality as a valid research question, tenure committees that value feminist scholarship) necessary for such work. In social science departments, these conditions are met and actively reinforced; in a biochemistry laboratory or an aerospace engineering program, they are almost entirely absent. I therefore expect a strong positive interaction: the marginal effect of `female` on gender inequality mention is substantially larger when `social_science = 1` than when it equals zero, and conversely, the marginal effect of `social_science` is amplified when the author team has higher female representation. This is not merely a statistical convenience but reflects a genuine causal mechanism of *institutional enablement*: gendered identity supplies the motivation, and social science discipline supplies the means. I rank this first rather than second or third because it operates as a persistent structural condition affecting every paper a woman social scientist produces across all time periods, regardless of whether a particular gender crisis dominates the news cycle. I rank `news_inequality_mentions_3_years × social_science` second because it captures a different but equally important conditional mechanism: the *permeability* of academic disciplines to external societal shocks concerning gender. My assumption here is that the transmission of public discourse into academic production is not uniform across the knowledge system but is heavily concentrated in disciplines whose epistemological mission is to understand and explain social phenomena. When a wave of media attention to gender inequality sweeps through public discourse—triggered, for example, by the #MeToo movement (2017–2018), the revelation of widespread sexual harassment in academia and industry, political battles over reproductive rights, or sustained coverage of the gender wage gap—social scientists experience this as directly relevant to their research programs. Sociology journals issue special calls for papers on gender-based violence; psychology departments accelerate ongoing projects on the psychological effects of sexism; political science panels convene on the politics of gender equity. In these fields, the boundary between \"society\" and \"the academy\" is intentionally porous, and societal crises are treated as legitimate and urgent objects of scholarly inquiry. By contrast, a spike in #MeToo coverage has virtually no mechanism through which it would alter the research agenda of a condensed matter physicist or an organic chemist, whose work is governed by internal scientific questions largely decoupled from current events. The positive sign of this interaction reflects my belief that societal salience and disciplinary orientation are *complements*: news attention provides the stimulus, and social science provides the receptive apparatus. Neither alone is as powerful as their combination. I rank this second rather than first because, while the societal-to-academic transmission channel is powerful, it is more episodic and event-driven than the structural identity-by-institution interaction. The #MeToo movement created a dramatic but temporally bounded surge; the identity-by-institution interaction, by contrast, operates continuously across all years, producing a steady-state elevation in gender inequality scholarship among women social scientists regardless of the news cycle. I rank `female × news_inequality_mentions_3_years` third because it captures what I call a *resonance* or *mobilization* effect that operates at the intersection of personal gender identity and historical moment. My reasoning is that when gender inequality becomes salient in public discourse, this salience does not affect all scholars equally. Women scholars experience public episodes of gender injustice—the viral spread of #MeToo testimonies, the confirmation hearings involving allegations of sexual misconduct, the publication of gender pay gap data, the rollback of reproductive rights—not as abstract news items but as events that implicate their own professional lives, bodily autonomy, and community well-being. This personal stake generates a powerful motivational surge to contribute scholarly analysis, to document the phenomenon empirically, and to intervene in public debate through academic channels. Simultaneously, institutional demand for women's scholarly voices rises during such periods: journal editors solicit commentary from women experts on gender, funding agencies create rapid-response grants on gender-based violence and workplace harassment, and universities seek to demonstrate institutional responsiveness by amplifying the work of women faculty. The result is that the effect of societal salience (`news_inequality_mentions_3_years`) on gender inequality scholarship is *amplified* for author teams with higher female representation. The positive sign reflects this dual mobilization—both internal (heightened personal motivation) and external (increased institutional demand)—that amplifies the effect of news salience specifically for author teams with higher female representation. I rank this third because, while theoretically compelling, I believe its empirical magnitude may be somewhat smaller than the first two interactions for two reasons. First, the identity-by-institution interaction (Rank 1) operates as a persistent structural condition affecting every paper a woman social scientist produces, whereas the identity-by-news interaction (Rank 3) operates primarily during periods of heightened public salience, which represent a subset of the total time window. Second, the news-by-institution interaction (Rank 2) affects the entire population of social scientists during salient periods, whereas the identity-by-news interaction affects only the subset of scholars with higher female representation, implying a narrower aggregate effect on the overall probability of gender inequality mention in the dataset. A critical assumption underlying all three interactions is that the production of gender inequality scholarship is characterized by *multiplicative* rather than merely additive causation. That is, I do not believe that identity, institution, and context simply contribute independent increments of probability. Rather, I believe they function as *necessary complements*: gendered identity without institutional support remains unrealized potential—a woman scholar in a physics department may be deeply motivated to study gender inequality but lacks the disciplinary vocabulary, methodological tools, and peer community to do so; institutional support without motivated actors produces generic scholarship that may not foreground gender as a central analytic category; and both identity and institution without temporal-political opportunity produce steady-state output rather than the surges that characterize moments of gender reckoning such as #MeToo. The positive signs on all three interactions reflect this complementarity logic—each pair of features amplifies the other's effect on the outcome. I did not select any negatively signed interactions among my top three because I believe the most theoretically important conditional relationships in this domain are synergistic rather than suppressive. Negative interactions certainly exist—for example, `female × natural_science` would likely be negative, reflecting the suppression of gender-identity-driven topic selection in disciplines inhospitable to gender inequality research—but I view these as the logical mirror image of the positive interactions I selected (i.e., `female × social_science` being positive implies that the effect of `female` is weaker outside social science, which includes natural science), and thus less theoretically distinctive to highlight separately. The three positive interactions I selected collectively articulate a theory of *convergent enablement*: gender inequality scholarship is most likely when the right people (women scholars), in the right places (social science disciplines), at the right time (periods of public gender salience) come together, and it is the multiplicative interaction among these conditions—not their mere additive co-occurrence—that drives the highest probability of gender inequality discourse."}, {"id": "GenAI-23", "name": "gemini_3.6flash_extended", "x": 0.6587551357917678, "y": 0.7892761516310425, "degree": 23, "words": 158, "explanation": "The selected second-order interactions capture the synergistic compounding effects of disciplinary infrastructure, author identity, intersectional standpoint epistemologies, and macro-bibliometric trends. The top-ranked interaction, `social_science` × `female` (+), reflects the powerful synergy between identity-driven research agendas and institutional legitimacy: while female scholars possess key epistemic motivations to examine gender dynamics, social science disciplines supply the required theoretical frameworks, analytical tools, and editorial openness necessary to translate these interests into published papers on gender inequality. The second interaction, `social_science` × `paper_inequality_mentions_3_years` (+), illustrates a discipline-specific absorption capacity, where broad academic momentum and funding incentives surrounding inequality are most readily absorbed and operationalized within social science literature rather than in natural or technical sciences. Finally, the third interaction, `female` × `black` (+), is rooted in intersectional theory, which emphasizes that teams with higher proportions of Black female scholars bring multidimensional standpoint insights regarding compounding systems of domination, significantly amplifying the likelihood of explicitly framing research around gender disparities and structural inequality."}, {"id": "GenAI-24", "name": "GPT_5.6Sol_high", "x": 0.08, "y": 0.7386263922095432, "degree": 22, "words": 189, "explanation": "I rank `social_science × female` first because the relationship between a higher estimated share of female authors and gender-inequality discussion should be strongest in fields where gender is already recognized as a legitimate object of theory and empirical research. Its positive sign assumes that author-team composition and disciplinary context reinforce one another: scholars may be more likely to pursue gender-related questions when suitable concepts, methods, journals, and audiences are available. I rank `social_science × paper_inequality_mentions_3_years` second because a broader rise in academic attention to inequality should generate especially large increases in gender-inequality research within social-science disciplines, which are better positioned to absorb and develop that agenda; this implies a positive interaction. I rank `news_inequality_mentions_3_years × paper_inequality_mentions_3_years` third and positive because public and scholarly attention can be mutually reinforcing: news coverage raises the salience and urgency of inequality, while an active academic literature provides concepts, evidence, and publication opportunities. I place this interaction third because both variables measure inequality in general rather than gender inequality specifically. These expectations are associational and somewhat uncertain, especially because `female` is inferred probabilistically from authors’ first names rather than directly observed or self-identified gender."}], "links": [{"source": "GenAI-0", "target": "GenAI-1", "similarity": 0.8533}, {"source": "GenAI-0", "target": "GenAI-2", "similarity": 0.8518}, {"source": "GenAI-0", "target": "GenAI-3", "similarity": 0.8489}, {"source": "GenAI-0", "target": "GenAI-4", "similarity": 0.8748}, {"source": "GenAI-0", "target": "GenAI-5", "similarity": 0.8748}, {"source": "GenAI-0", "target": "GenAI-6", "similarity": 0.8889}, {"source": "GenAI-0", "target": "GenAI-7", "similarity": 0.8265}, {"source": "GenAI-0", "target": "GenAI-8", "similarity": 0.862}, {"source": "GenAI-0", "target": "GenAI-9", "similarity": 0.8635}, {"source": "GenAI-0", "target": "GenAI-10", "similarity": 0.8641}, {"source": "GenAI-0", "target": "GenAI-11", "similarity": 0.8857}, {"source": "GenAI-0", "target": "GenAI-12", "similarity": 0.8434}, {"source": "GenAI-0", "target": "GenAI-13", "similarity": 0.8841}, {"source": "GenAI-0", "target": "GenAI-14", "similarity": 0.8783}, {"source": "GenAI-0", "target": "GenAI-15", "similarity": 0.9187}, {"source": "GenAI-0", "target": "GenAI-16", "similarity": 0.9202}, {"source": "GenAI-0", "target": "GenAI-17", "similarity": 0.9106}, {"source": "GenAI-0", "target": "GenAI-18", "similarity": 0.9356}, {"source": "GenAI-0", "target": "GenAI-19", "similarity": 0.8584}, {"source": "GenAI-0", "target": "GenAI-20", "similarity": 0.9071}, {"source": "GenAI-0", "target": "GenAI-21", "similarity": 0.9008}, {"source": "GenAI-0", "target": "GenAI-22", "similarity": 0.8133}, {"source": "GenAI-0", "target": "GenAI-23", "similarity": 0.8455}, {"source": "GenAI-0", "target": "GenAI-24", "similarity": 0.8823}, {"source": "GenAI-1", "target": "GenAI-2", "similarity": 0.7894}, {"source": "GenAI-1", "target": "GenAI-3", "similarity": 0.8107}, {"source": "GenAI-1", "target": "GenAI-4", "similarity": 0.8144}, {"source": "GenAI-1", "target": "GenAI-5", "similarity": 0.8204}, {"source": "GenAI-1", "target": "GenAI-6", "similarity": 0.8076}, {"source": "GenAI-1", "target": "GenAI-7", "similarity": 0.8059}, {"source": "GenAI-1", "target": "GenAI-8", "similarity": 0.8279}, {"source": "GenAI-1", "target": "GenAI-9", "similarity": 0.8381}, {"source": "GenAI-1", "target": "GenAI-10", "similarity": 0.7916}, {"source": "GenAI-1", "target": "GenAI-11", "similarity": 0.843}, {"source": "GenAI-1", "target": "GenAI-12", "similarity": 0.8039}, {"source": "GenAI-1", "target": "GenAI-13", "similarity": 0.8443}, {"source": "GenAI-1", "target": "GenAI-14", "similarity": 0.8127}, {"source": "GenAI-1", "target": "GenAI-15", "similarity": 0.854}, {"source": "GenAI-1", "target": "GenAI-16", "similarity": 0.8471}, {"source": "GenAI-1", "target": "GenAI-17", "similarity": 0.8503}, {"source": "GenAI-1", "target": "GenAI-18", "similarity": 0.8418}, {"source": "GenAI-1", "target": "GenAI-20", "similarity": 0.8538}, {"source": "GenAI-1", "target": "GenAI-21", "similarity": 0.8121}, {"source": "GenAI-2", "target": "GenAI-3", "similarity": 0.8564}, {"source": "GenAI-2", "target": "GenAI-4", "similarity": 0.8383}, {"source": "GenAI-2", "target": "GenAI-5", "similarity": 0.8346}, {"source": "GenAI-2", "target": "GenAI-6", "similarity": 0.8625}, {"source": "GenAI-2", "target": "GenAI-7", "similarity": 0.8081}, {"source": "GenAI-2", "target": "GenAI-8", "similarity": 0.8358}, {"source": "GenAI-2", "target": "GenAI-9", "similarity": 0.8364}, {"source": "GenAI-2", "target": "GenAI-10", "similarity": 0.8139}, {"source": "GenAI-2", "target": "GenAI-11", "similarity": 0.8233}, {"source": "GenAI-2", "target": "GenAI-12", "similarity": 0.8371}, {"source": "GenAI-2", "target": "GenAI-13", "similarity": 0.8531}, {"source": "GenAI-2", "target": "GenAI-14", "similarity": 0.8341}, {"source": "GenAI-2", "target": "GenAI-15", "similarity": 0.855}, {"source": "GenAI-2", "target": "GenAI-16", "similarity": 0.8615}, {"source": "GenAI-2", "target": "GenAI-17", "similarity": 0.8554}, {"source": "GenAI-2", "target": "GenAI-18", "similarity": 0.8644}, {"source": "GenAI-2", "target": "GenAI-19", "similarity": 0.8637}, {"source": "GenAI-2", "target": "GenAI-20", "similarity": 0.8319}, {"source": "GenAI-2", "target": "GenAI-21", "similarity": 0.8499}, {"source": "GenAI-2", "target": "GenAI-22", "similarity": 0.8136}, {"source": "GenAI-2", "target": "GenAI-23", "similarity": 0.8266}, {"source": "GenAI-2", "target": "GenAI-24", "similarity": 0.8342}, {"source": "GenAI-3", "target": "GenAI-4", "similarity": 0.8601}, {"source": "GenAI-3", "target": "GenAI-5", "similarity": 0.8655}, {"source": "GenAI-3", "target": "GenAI-6", "similarity": 0.8603}, {"source": "GenAI-3", "target": "GenAI-7", "similarity": 0.8427}, {"source": "GenAI-3", "target": "GenAI-8", "similarity": 0.8587}, {"source": "GenAI-3", "target": "GenAI-9", "similarity": 0.8681}, {"source": "GenAI-3", "target": "GenAI-10", "similarity": 0.8418}, {"source": "GenAI-3", "target": "GenAI-11", "similarity": 0.8689}, {"source": "GenAI-3", "target": "GenAI-12", "similarity": 0.8492}, {"source": "GenAI-3", "target": "GenAI-13", "similarity": 0.8655}, {"source": "GenAI-3", "target": "GenAI-14", "similarity": 0.8451}, {"source": "GenAI-3", "target": "GenAI-15", "similarity": 0.8592}, {"source": "GenAI-3", "target": "GenAI-16", "similarity": 0.851}, {"source": "GenAI-3", "target": "GenAI-17", "similarity": 0.8514}, {"source": "GenAI-3", "target": "GenAI-18", "similarity": 0.843}, {"source": "GenAI-3", "target": "GenAI-19", "similarity": 0.8154}, {"source": "GenAI-3", "target": "GenAI-20", "similarity": 0.8296}, {"source": "GenAI-3", "target": "GenAI-21", "similarity": 0.8122}, {"source": "GenAI-3", "target": "GenAI-22", "similarity": 0.804}, {"source": "GenAI-3", "target": "GenAI-23", "similarity": 0.8244}, {"source": "GenAI-3", "target": "GenAI-24", "similarity": 0.7864}, {"source": "GenAI-4", "target": "GenAI-5", "similarity": 0.901}, {"source": "GenAI-4", "target": "GenAI-6", "similarity": 0.8787}, {"source": "GenAI-4", "target": "GenAI-7", "similarity": 0.8205}, {"source": "GenAI-4", "target": "GenAI-8", "similarity": 0.8439}, {"source": "GenAI-4", "target": "GenAI-9", "similarity": 0.8728}, {"source": "GenAI-4", "target": "GenAI-10", "similarity": 0.8189}, {"source": "GenAI-4", "target": "GenAI-11", "similarity": 0.8504}, {"source": "GenAI-4", "target": "GenAI-12", "similarity": 0.8364}, {"source": "GenAI-4", "target": "GenAI-13", "similarity": 0.8552}, {"source": "GenAI-4", "target": "GenAI-14", "similarity": 0.8321}, {"source": "GenAI-4", "target": "GenAI-15", "similarity": 0.8666}, {"source": "GenAI-4", "target": "GenAI-16", "similarity": 0.8624}, {"source": "GenAI-4", "target": "GenAI-17", "similarity": 0.8867}, {"source": "GenAI-4", "target": "GenAI-18", "similarity": 0.8888}, {"source": "GenAI-4", "target": "GenAI-19", "similarity": 0.83}, {"source": "GenAI-4", "target": "GenAI-20", "similarity": 0.8412}, {"source": "GenAI-4", "target": "GenAI-21", "similarity": 0.8358}, {"source": "GenAI-4", "target": "GenAI-22", "similarity": 0.8017}, {"source": "GenAI-4", "target": "GenAI-23", "similarity": 0.803}, {"source": "GenAI-4", "target": "GenAI-24", "similarity": 0.8295}, {"source": "GenAI-5", "target": "GenAI-6", "similarity": 0.9168}, {"source": "GenAI-5", "target": "GenAI-7", "similarity": 0.8097}, {"source": "GenAI-5", "target": "GenAI-8", "similarity": 0.8491}, {"source": "GenAI-5", "target": "GenAI-9", "similarity": 0.8781}, {"source": "GenAI-5", "target": "GenAI-10", "similarity": 0.8382}, {"source": "GenAI-5", "target": "GenAI-11", "similarity": 0.87}, {"source": "GenAI-5", "target": "GenAI-12", "similarity": 0.8245}, {"source": "GenAI-5", "target": "GenAI-13", "similarity": 0.8782}, {"source": "GenAI-5", "target": "GenAI-14", "similarity": 0.8755}, {"source": "GenAI-5", "target": "GenAI-15", "similarity": 0.8705}, {"source": "GenAI-5", "target": "GenAI-16", "similarity": 0.8614}, {"source": "GenAI-5", "target": "GenAI-17", "similarity": 0.8773}, {"source": "GenAI-5", "target": "GenAI-18", "similarity": 0.8812}, {"source": "GenAI-5", "target": "GenAI-19", "similarity": 0.8454}, {"source": "GenAI-5", "target": "GenAI-20", "similarity": 0.8503}, {"source": "GenAI-5", "target": "GenAI-21", "similarity": 0.8279}, {"source": "GenAI-5", "target": "GenAI-23", "similarity": 0.8549}, {"source": "GenAI-5", "target": "GenAI-24", "similarity": 0.8127}, {"source": "GenAI-6", "target": "GenAI-7", "similarity": 0.8318}, {"source": "GenAI-6", "target": "GenAI-8", "similarity": 0.8478}, {"source": "GenAI-6", "target": "GenAI-9", "similarity": 0.8646}, {"source": "GenAI-6", "target": "GenAI-10", "similarity": 0.8567}, {"source": "GenAI-6", "target": "GenAI-11", "similarity": 0.8748}, {"source": "GenAI-6", "target": "GenAI-12", "similarity": 0.8395}, {"source": "GenAI-6", "target": "GenAI-13", "similarity": 0.9047}, {"source": "GenAI-6", "target": "GenAI-14", "similarity": 0.8931}, {"source": "GenAI-6", "target": "GenAI-15", "similarity": 0.89}, {"source": "GenAI-6", "target": "GenAI-16", "similarity": 0.8687}, {"source": "GenAI-6", "target": "GenAI-17", "similarity": 0.8959}, {"source": "GenAI-6", "target": "GenAI-18", "similarity": 0.9037}, {"source": "GenAI-6", "target": "GenAI-19", "similarity": 0.8801}, {"source": "GenAI-6", "target": "GenAI-20", "similarity": 0.8734}, {"source": "GenAI-6", "target": "GenAI-21", "similarity": 0.8654}, {"source": "GenAI-6", "target": "GenAI-22", "similarity": 0.8273}, {"source": "GenAI-6", "target": "GenAI-23", "similarity": 0.8796}, {"source": "GenAI-6", "target": "GenAI-24", "similarity": 0.8705}, {"source": "GenAI-7", "target": "GenAI-8", "similarity": 0.8604}, {"source": "GenAI-7", "target": "GenAI-9", "similarity": 0.868}, {"source": "GenAI-7", "target": "GenAI-10", "similarity": 0.8121}, {"source": "GenAI-7", "target": "GenAI-11", "similarity": 0.8684}, {"source": "GenAI-7", "target": "GenAI-12", "similarity": 0.8535}, {"source": "GenAI-7", "target": "GenAI-13", "similarity": 0.8414}, {"source": "GenAI-7", "target": "GenAI-14", "similarity": 0.8146}, {"source": "GenAI-7", "target": "GenAI-15", "similarity": 0.8033}, {"source": "GenAI-7", "target": "GenAI-16", "similarity": 0.8217}, {"source": "GenAI-7", "target": "GenAI-17", "similarity": 0.8163}, {"source": "GenAI-7", "target": "GenAI-18", "similarity": 0.8232}, {"source": "GenAI-7", "target": "GenAI-19", "similarity": 0.8242}, {"source": "GenAI-7", "target": "GenAI-22", "similarity": 0.8289}, {"source": "GenAI-7", "target": "GenAI-23", "similarity": 0.8222}, {"source": "GenAI-8", "target": "GenAI-9", "similarity": 0.8897}, {"source": "GenAI-8", "target": "GenAI-10", "similarity": 0.8606}, {"source": "GenAI-8", "target": "GenAI-11", "similarity": 0.9242}, {"source": "GenAI-8", "target": "GenAI-12", "similarity": 0.8572}, {"source": "GenAI-8", "target": "GenAI-13", "similarity": 0.877}, {"source": "GenAI-8", "target": "GenAI-14", "similarity": 0.8616}, {"source": "GenAI-8", "target": "GenAI-15", "similarity": 0.8863}, {"source": "GenAI-8", "target": "GenAI-16", "similarity": 0.8699}, {"source": "GenAI-8", "target": "GenAI-17", "similarity": 0.8603}, {"source": "GenAI-8", "target": "GenAI-18", "similarity": 0.8727}, {"source": "GenAI-8", "target": "GenAI-19", "similarity": 0.8133}, {"source": "GenAI-8", "target": "GenAI-20", "similarity": 0.8381}, {"source": "GenAI-8", "target": "GenAI-21", "similarity": 0.838}, {"source": "GenAI-8", "target": "GenAI-22", "similarity": 0.8259}, {"source": "GenAI-8", "target": "GenAI-23", "similarity": 0.8526}, {"source": "GenAI-8", "target": "GenAI-24", "similarity": 0.8095}, {"source": "GenAI-9", "target": "GenAI-10", "similarity": 0.878}, {"source": "GenAI-9", "target": "GenAI-11", "similarity": 0.8805}, {"source": "GenAI-9", "target": "GenAI-12", "similarity": 0.9108}, {"source": "GenAI-9", "target": "GenAI-13", "similarity": 0.8727}, {"source": "GenAI-9", "target": "GenAI-14", "similarity": 0.858}, {"source": "GenAI-9", "target": "GenAI-15", "similarity": 0.8614}, {"source": "GenAI-9", "target": "GenAI-16", "similarity": 0.8497}, {"source": "GenAI-9", "target": "GenAI-17", "similarity": 0.8779}, {"source": "GenAI-9", "target": "GenAI-18", "similarity": 0.8884}, {"source": "GenAI-9", "target": "GenAI-19", "similarity": 0.8321}, {"source": "GenAI-9", "target": "GenAI-20", "similarity": 0.8284}, {"source": "GenAI-9", "target": "GenAI-21", "similarity": 0.8431}, {"source": "GenAI-9", "target": "GenAI-22", "similarity": 0.8335}, {"source": "GenAI-9", "target": "GenAI-23", "similarity": 0.8389}, {"source": "GenAI-9", "target": "GenAI-24", "similarity": 0.8322}, {"source": "GenAI-10", "target": "GenAI-11", "similarity": 0.8697}, {"source": "GenAI-10", "target": "GenAI-12", "similarity": 0.8596}, {"source": "GenAI-10", "target": "GenAI-13", "similarity": 0.857}, {"source": "GenAI-10", "target": "GenAI-14", "similarity": 0.8987}, {"source": "GenAI-10", "target": "GenAI-15", "similarity": 0.8649}, {"source": "GenAI-10", "target": "GenAI-16", "similarity": 0.8425}, {"source": "GenAI-10", "target": "GenAI-17", "similarity": 0.8456}, {"source": "GenAI-10", "target": "GenAI-18", "similarity": 0.8655}, {"source": "GenAI-10", "target": "GenAI-19", "similarity": 0.8231}, {"source": "GenAI-10", "target": "GenAI-20", "similarity": 0.8378}, {"source": "GenAI-10", "target": "GenAI-21", "similarity": 0.8443}, {"source": "GenAI-10", "target": "GenAI-22", "similarity": 0.8098}, {"source": "GenAI-10", "target": "GenAI-23", "similarity": 0.8864}, {"source": "GenAI-10", "target": "GenAI-24", "similarity": 0.8328}, {"source": "GenAI-11", "target": "GenAI-12", "similarity": 0.8539}, {"source": "GenAI-11", "target": "GenAI-13", "similarity": 0.8986}, {"source": "GenAI-11", "target": "GenAI-14", "similarity": 0.8886}, {"source": "GenAI-11", "target": "GenAI-15", "similarity": 0.8986}, {"source": "GenAI-11", "target": "GenAI-16", "similarity": 0.9034}, {"source": "GenAI-11", "target": "GenAI-17", "similarity": 0.8763}, {"source": "GenAI-11", "target": "GenAI-18", "similarity": 0.891}, {"source": "GenAI-11", "target": "GenAI-19", "similarity": 0.8227}, {"source": "GenAI-11", "target": "GenAI-20", "similarity": 0.8764}, {"source": "GenAI-11", "target": "GenAI-21", "similarity": 0.8584}, {"source": "GenAI-11", "target": "GenAI-22", "similarity": 0.8109}, {"source": "GenAI-11", "target": "GenAI-23", "similarity": 0.8593}, {"source": "GenAI-11", "target": "GenAI-24", "similarity": 0.8217}, {"source": "GenAI-12", "target": "GenAI-13", "similarity": 0.8335}, {"source": "GenAI-12", "target": "GenAI-14", "similarity": 0.8229}, {"source": "GenAI-12", "target": "GenAI-15", "similarity": 0.8403}, {"source": "GenAI-12", "target": "GenAI-16", "similarity": 0.8351}, {"source": "GenAI-12", "target": "GenAI-17", "similarity": 0.8468}, {"source": "GenAI-12", "target": "GenAI-18", "similarity": 0.8594}, {"source": "GenAI-12", "target": "GenAI-19", "similarity": 0.8319}, {"source": "GenAI-12", "target": "GenAI-20", "similarity": 0.8051}, {"source": "GenAI-12", "target": "GenAI-21", "similarity": 0.8294}, {"source": "GenAI-12", "target": "GenAI-22", "similarity": 0.8262}, {"source": "GenAI-12", "target": "GenAI-23", "similarity": 0.8341}, {"source": "GenAI-12", "target": "GenAI-24", "similarity": 0.8187}, {"source": "GenAI-13", "target": "GenAI-14", "similarity": 0.8972}, {"source": "GenAI-13", "target": "GenAI-15", "similarity": 0.9173}, {"source": "GenAI-13", "target": "GenAI-16", "similarity": 0.8782}, {"source": "GenAI-13", "target": "GenAI-17", "similarity": 0.8831}, {"source": "GenAI-13", "target": "GenAI-18", "similarity": 0.8914}, {"source": "GenAI-13", "target": "GenAI-19", "similarity": 0.8607}, {"source": "GenAI-13", "target": "GenAI-20", "similarity": 0.8983}, {"source": "GenAI-13", "target": "GenAI-21", "similarity": 0.8468}, {"source": "GenAI-13", "target": "GenAI-22", "similarity": 0.8034}, {"source": "GenAI-13", "target": "GenAI-23", "similarity": 0.8771}, {"source": "GenAI-13", "target": "GenAI-24", "similarity": 0.8478}, {"source": "GenAI-14", "target": "GenAI-15", "similarity": 0.8739}, {"source": "GenAI-14", "target": "GenAI-16", "similarity": 0.8714}, {"source": "GenAI-14", "target": "GenAI-17", "similarity": 0.8664}, {"source": "GenAI-14", "target": "GenAI-18", "similarity": 0.8667}, {"source": "GenAI-14", "target": "GenAI-19", "similarity": 0.8748}, {"source": "GenAI-14", "target": "GenAI-20", "similarity": 0.8775}, {"source": "GenAI-14", "target": "GenAI-21", "similarity": 0.8549}, {"source": "GenAI-14", "target": "GenAI-22", "similarity": 0.7887}, {"source": "GenAI-14", "target": "GenAI-23", "similarity": 0.9162}, {"source": "GenAI-14", "target": "GenAI-24", "similarity": 0.8348}, {"source": "GenAI-15", "target": "GenAI-16", "similarity": 0.9209}, {"source": "GenAI-15", "target": "GenAI-17", "similarity": 0.9217}, {"source": "GenAI-15", "target": "GenAI-18", "similarity": 0.9353}, {"source": "GenAI-15", "target": "GenAI-19", "similarity": 0.8479}, {"source": "GenAI-15", "target": "GenAI-20", "similarity": 0.9337}, {"source": "GenAI-15", "target": "GenAI-21", "similarity": 0.9113}, {"source": "GenAI-15", "target": "GenAI-22", "similarity": 0.8114}, {"source": "GenAI-15", "target": "GenAI-23", "similarity": 0.8454}, {"source": "GenAI-15", "target": "GenAI-24", "similarity": 0.8911}, {"source": "GenAI-16", "target": "GenAI-17", "similarity": 0.912}, {"source": "GenAI-16", "target": "GenAI-18", "similarity": 0.9121}, {"source": "GenAI-16", "target": "GenAI-19", "similarity": 0.8257}, {"source": "GenAI-16", "target": "GenAI-20", "similarity": 0.9295}, {"source": "GenAI-16", "target": "GenAI-21", "similarity": 0.9125}, {"source": "GenAI-16", "target": "GenAI-22", "similarity": 0.7976}, {"source": "GenAI-16", "target": "GenAI-23", "similarity": 0.8231}, {"source": "GenAI-16", "target": "GenAI-24", "similarity": 0.8623}, {"source": "GenAI-17", "target": "GenAI-18", "similarity": 0.947}, {"source": "GenAI-17", "target": "GenAI-19", "similarity": 0.8524}, {"source": "GenAI-17", "target": "GenAI-20", "similarity": 0.9185}, {"source": "GenAI-17", "target": "GenAI-21", "similarity": 0.9026}, {"source": "GenAI-17", "target": "GenAI-22", "similarity": 0.8193}, {"source": "GenAI-17", "target": "GenAI-23", "similarity": 0.8236}, {"source": "GenAI-17", "target": "GenAI-24", "similarity": 0.8947}, {"source": "GenAI-18", "target": "GenAI-19", "similarity": 0.8531}, {"source": "GenAI-18", "target": "GenAI-20", "similarity": 0.9106}, {"source": "GenAI-18", "target": "GenAI-21", "similarity": 0.918}, {"source": "GenAI-18", "target": "GenAI-22", "similarity": 0.8171}, {"source": "GenAI-18", "target": "GenAI-23", "similarity": 0.8394}, {"source": "GenAI-18", "target": "GenAI-24", "similarity": 0.9014}, {"source": "GenAI-19", "target": "GenAI-20", "similarity": 0.8428}, {"source": "GenAI-19", "target": "GenAI-21", "similarity": 0.8423}, {"source": "GenAI-19", "target": "GenAI-22", "similarity": 0.8308}, {"source": "GenAI-19", "target": "GenAI-23", "similarity": 0.8823}, {"source": "GenAI-19", "target": "GenAI-24", "similarity": 0.8522}, {"source": "GenAI-20", "target": "GenAI-21", "similarity": 0.8884}, {"source": "GenAI-20", "target": "GenAI-22", "similarity": 0.787}, {"source": "GenAI-20", "target": "GenAI-23", "similarity": 0.8265}, {"source": "GenAI-20", "target": "GenAI-24", "similarity": 0.8909}, {"source": "GenAI-21", "target": "GenAI-22", "similarity": 0.7994}, {"source": "GenAI-21", "target": "GenAI-23", "similarity": 0.8263}, {"source": "GenAI-21", "target": "GenAI-24", "similarity": 0.8824}, {"source": "GenAI-22", "target": "GenAI-23", "similarity": 0.7945}, {"source": "GenAI-22", "target": "GenAI-24", "similarity": 0.7958}, {"source": "GenAI-23", "target": "GenAI-24", "similarity": 0.8054}]}]}</script>
+  <script id="nav-data" type="application/json">[{"href": "gender/main-effects/post-ML/raw_embedding_dimension_3072/05_semantic_threshold_network.html", "task": "gender", "theory_type": "main-effects", "phase": "post-ML", "variant_key": "three_groups", "title": "Gender · Main Effects · Post ML", "subtitle": "Semantic Network", "variant": "Three groups (PhDs, Senior Scientists, GenAI)"}, {"href": "gender/main-effects/post-ML/raw_embedding_dimension_3072/05_semantic_threshold_network_collapsed.html", "task": "gender", "theory_type": "main-effects", "phase": "post-ML", "variant_key": "collapsed", "title": "Gender · Main Effects · Post ML", "subtitle": "Semantic Network", "variant": "Two groups (Humans and GenAI)"}, {"href": "gender/main-effects/pre-ML/raw_embedding_dimension_3072/05_semantic_threshold_network.html", "task": "gender", "theory_type": "main-effects", "phase": "pre-ML", "variant_key": "three_groups", "title": "Gender · Main Effects · Pre ML", "subtitle": "Semantic Network", "variant": "Three groups (PhDs, Senior Scientists, GenAI)"}, {"href": "gender/main-effects/pre-ML/raw_embedding_dimension_3072/05_semantic_threshold_network_collapsed.html", "task": "gender", "theory_type": "main-effects", "phase": "pre-ML", "variant_key": "collapsed", "title": "Gender · Main Effects · Pre ML", "subtitle": "Semantic Network", "variant": "Two groups (Humans and GenAI)"}, {"href": "gender/soi/post-ML/raw_embedding_dimension_3072/05_semantic_threshold_network.html", "task": "gender", "theory_type": "soi", "phase": "post-ML", "variant_key": "three_groups", "title": "Gender · Interactions · Post ML", "subtitle": "Semantic Network", "variant": "Three groups (PhDs, Senior Scientists, GenAI)"}, {"href": "gender/soi/post-ML/raw_embedding_dimension_3072/05_semantic_threshold_network_collapsed.html", "task": "gender", "theory_type": "soi", "phase": "post-ML", "variant_key": "collapsed", "title": "Gender · Interactions · Post ML", "subtitle": "Semantic Network", "variant": "Two groups (Humans and GenAI)"}, {"href": "gender/soi/pre-ML/raw_embedding_dimension_3072/05_semantic_threshold_network.html", "task": "gender", "theory_type": "soi", "phase": "pre-ML", "variant_key": "three_groups", "title": "Gender · Interactions · Pre ML", "subtitle": "Semantic Network", "variant": "Three groups (PhDs, Senior Scientists, GenAI)"}, {"href": "gender/soi/pre-ML/raw_embedding_dimension_3072/05_semantic_threshold_network_collapsed.html", "task": "gender", "theory_type": "soi", "phase": "pre-ML", "variant_key": "collapsed", "title": "Gender · Interactions · Pre ML", "subtitle": "Semantic Network", "variant": "Two groups (Humans and GenAI)"}, {"href": "race/main-effects/post-ML/raw_embedding_dimension_3072/05_semantic_threshold_network.html", "task": "race", "theory_type": "main-effects", "phase": "post-ML", "variant_key": "three_groups", "title": "Race · Main Effects · Post ML", "subtitle": "Semantic Network", "variant": "Three groups (PhDs, Senior Scientists, GenAI)"}, {"href": "race/main-effects/post-ML/raw_embedding_dimension_3072/05_semantic_threshold_network_collapsed.html", "task": "race", "theory_type": "main-effects", "phase": "post-ML", "variant_key": "collapsed", "title": "Race · Main Effects · Post ML", "subtitle": "Semantic Network", "variant": "Two groups (Humans and GenAI)"}, {"href": "race/main-effects/pre-ML/raw_embedding_dimension_3072/05_semantic_threshold_network.html", "task": "race", "theory_type": "main-effects", "phase": "pre-ML", "variant_key": "three_groups", "title": "Race · Main Effects · Pre ML", "subtitle": "Semantic Network", "variant": "Three groups (PhDs, Senior Scientists, GenAI)"}, {"href": "race/main-effects/pre-ML/raw_embedding_dimension_3072/05_semantic_threshold_network_collapsed.html", "task": "race", "theory_type": "main-effects", "phase": "pre-ML", "variant_key": "collapsed", "title": "Race · Main Effects · Pre ML", "subtitle": "Semantic Network", "variant": "Two groups (Humans and GenAI)"}, {"href": "race/soi/post-ML/raw_embedding_dimension_3072/05_semantic_threshold_network.html", "task": "race", "theory_type": "soi", "phase": "post-ML", "variant_key": "three_groups", "title": "Race · Interactions · Post ML", "subtitle": "Semantic Network", "variant": "Three groups (PhDs, Senior Scientists, GenAI)"}, {"href": "race/soi/post-ML/raw_embedding_dimension_3072/05_semantic_threshold_network_collapsed.html", "task": "race", "theory_type": "soi", "phase": "post-ML", "variant_key": "collapsed", "title": "Race · Interactions · Post ML", "subtitle": "Semantic Network", "variant": "Two groups (Humans and GenAI)"}, {"href": "race/soi/pre-ML/raw_embedding_dimension_3072/05_semantic_threshold_network.html", "task": "race", "theory_type": "soi", "phase": "pre-ML", "variant_key": "three_groups", "title": "Race · Interactions · Pre ML", "subtitle": "Semantic Network", "variant": "Three groups (PhDs, Senior Scientists, GenAI)"}, {"href": "race/soi/pre-ML/raw_embedding_dimension_3072/05_semantic_threshold_network_collapsed.html", "task": "race", "theory_type": "soi", "phase": "pre-ML", "variant_key": "collapsed", "title": "Race · Interactions · Pre ML", "subtitle": "Semantic Network", "variant": "Two groups (Humans and GenAI)"}]</script>
+  <script>(function () {
+  const TASK_ORDER = ["race", "gender"];
+  const TASK_LABELS = { gender: "Gender", race: "Race" };
+  const THEORY_ORDER = ["main-effects", "soi"];
+  const THEORY_LABELS = {
+    "main-effects": "Main Effects",
+    "soi": "Second-Order Interactions",
+  };
+  const PHASE_ORDER = ["pre-ML", "post-ML"];
+  const VARIANT_ORDER = ["three_groups", "collapsed"];
+  const VARIANT_LABELS = {
+    three_groups: "Three groups (PhDs, Senior Scientists, GenAI)",
+    collapsed: "Two groups (Humans and GenAI)",
+  };
+  const OPEN_SECTIONS_KEY = "network-sidebar-open-sections";
+
+  function navStorage() {
+    try {
+      return window.sessionStorage;
+    } catch {
+      return null;
+    }
+  }
+
+  function readOpenSections() {
+    const storage = navStorage();
+    if (!storage) return new Set();
+    try {
+      const raw = storage.getItem(OPEN_SECTIONS_KEY);
+      if (!raw) return new Set();
+      const parsed = JSON.parse(raw);
+      return new Set(Array.isArray(parsed) ? parsed : []);
+    } catch {
+      return new Set();
+    }
+  }
+
+  function writeOpenSections(openIds) {
+    const storage = navStorage();
+    if (!storage) return;
+    try {
+      storage.setItem(OPEN_SECTIONS_KEY, JSON.stringify([...openIds]));
+    } catch {
+      /* ignore quota / private browsing */
+    }
+  }
+
+  // Drop legacy persistence so reopening the site starts collapsed.
+  try {
+    localStorage.removeItem(OPEN_SECTIONS_KEY);
+  } catch {
+    /* ignore */
+  }
+
+  function sectionId(task, theory) {
+    return task + "/" + theory;
+  }
+
+  const PAGE_SUFFIX_RE =
+    /((?:gender|race)\/(?:main-effects|soi)\/(?:pre-ML|post-ML)\/[^/]+\/[^/]+?)(?:\.html)?$/i;
+
+  function normalizeNavPath(path) {
+    if (path == null) return "";
+    let p = decodeURIComponent(String(path)).trim();
+    if (p.includes("://")) {
+      try {
+        p = new URL(p).pathname;
+      } catch {
+        /* keep p */
+      }
+    }
+    const pageMatch = p.match(PAGE_SUFFIX_RE);
+    if (pageMatch) {
+      return pageMatch[1].toLowerCase();
+    }
+    const marker = "/network/";
+    const markerIndex = p.indexOf(marker);
+    if (markerIndex !== -1) {
+      p = p.slice(markerIndex + marker.length);
+    }
+    p = p.replace(/^\//, "").replace(/\/$/, "");
+    if (!p || p === "index" || p === "index.html" || !p.includes("/")) return "";
+    if (p.endsWith(".html")) p = p.slice(0, -5);
+    if (p === "index") return "";
+    return p.toLowerCase();
+  }
+
+  function resolvedPathFromHref(href) {
+    try {
+      return normalizeNavPath(new URL(href, window.location.href).pathname);
+    } catch {
+      return normalizeNavPath(href);
+    }
+  }
+
+  function currentResolvedPath() {
+    return normalizeNavPath(window.location.pathname);
+  }
+
+  function pathsMatch(itemHref) {
+    const entryPath = normalizeNavPath(itemHref);
+    const currentPath = currentResolvedPath();
+    if (entryPath === currentPath) return true;
+    try {
+      return resolvedPathFromHref(navLinkHref(itemHref)) === currentPath;
+    } catch {
+      return false;
+    }
+  }
+
+  /** Path to current page relative to the network site root (no leading slash). */
+  function networkPathSuffix() {
+    const path = decodeURIComponent(window.location.pathname);
+    const pageMatch = path.match(
+      /((?:gender|race)\/(?:main-effects|soi)\/(?:pre-ML|post-ML)\/[^/]+\/[^/]+\.html)$/i
+    );
+    if (pageMatch) return pageMatch[1];
+    const marker = "/network/";
+    const markerIndex = path.indexOf(marker);
+    if (markerIndex !== -1) {
+      const rest = path.slice(markerIndex + marker.length).replace(/\/$/, "");
+      return rest || "index.html";
+    }
+    if (/\/index\.html$/i.test(path) || /\/$/.test(path)) return "index.html";
+    return path.replace(/^\//, "").replace(/\/$/, "");
+  }
+
+  function currentNavPath() {
+    return currentResolvedPath();
+  }
+
+  function isHttpDeployment() {
+    const p = window.location.protocol;
+    return p === "http:" || p === "https:";
+  }
+
+  /**
+   * Host-absolute site root for http(s), e.g. "/human-ai-semantic-network" or "/network".
+   * Relative links break when the URL omits a trailing slash
+   * (/human-ai-semantic-network + "gender/..." => /gender/...).
+   */
+  function networkSiteRoot() {
+    if (!isHttpDeployment()) return null;
+
+    const scripts = document.getElementsByTagName("script");
+    for (let i = 0; i < scripts.length; i++) {
+      const src = scripts[i].src;
+      if (!src || !/sidebar\.js(\?|$)/i.test(src)) continue;
+      try {
+        const pathname = new URL(src, window.location.href).pathname;
+        return pathname.replace(/\/network_interactive\/sidebar\.js$/i, "") || "";
+      } catch {
+        /* keep looking */
+      }
+    }
+
+    const path = decodeURIComponent(window.location.pathname);
+    const underPage = path.match(
+      /^(.*)\/(?:gender|race)\/(?:main-effects|soi)\/(?:pre-ML|post-ML)\//i
+    );
+    if (underPage) return underPage[1];
+
+    let root = path.replace(/\/index\.html$/i, "").replace(/\/$/, "");
+    return root || "";
+  }
+
+  /** Build href for a catalog entry from the current page location. */
+  function navLinkHref(itemHref) {
+    const target = String(itemHref).replace(/^\//, "");
+    const root = networkSiteRoot();
+    if (root !== null) {
+      // Keep .html; project Pages need the real filename.
+      return (root ? root : "") + "/" + target;
+    }
+    // file:// — stay relative to the current document.
+    return navBasePrefix() + target;
+  }
+
+  function navBasePrefix() {
+    const suffix = networkPathSuffix();
+    if (!suffix || suffix === "index.html" || suffix === "index") return "";
+    const depth = suffix.split("/").filter(Boolean).length - 1;
+    return depth > 0 ? "../".repeat(depth) : "";
+  }
+
+  window.buildNetworkSidebar = function (entries, rootId, options) {
+    const opts = options || {};
+    const root = document.getElementById(rootId || "site-sidebar");
+    if (!root) return;
+    if (!entries || !entries.length) {
+      console.warn("buildNetworkSidebar: no catalog entries; sidebar links will be empty.");
+      entries = [];
+    }
+
+    const openSections = readOpenSections();
+
+    const tree = {};
+    entries.forEach((e) => {
+      if (!tree[e.task]) tree[e.task] = {};
+      if (!tree[e.task][e.theory_type]) tree[e.task][e.theory_type] = {};
+      if (!tree[e.task][e.theory_type][e.phase]) tree[e.task][e.theory_type][e.phase] = {};
+      tree[e.task][e.theory_type][e.phase][e.variant_key] = e;
+    });
+
+    const brand = document.createElement("div");
+    brand.className = "sidebar-brand";
+    const homeHref = navLinkHref("index.html");
+    brand.innerHTML =
+      '<a href="' + homeHref + '">' +
+      '<div class="eyebrow">Theory explanation space</div>' +
+      "<h1>Semantic Networks</h1></a>";
+    root.appendChild(brand);
+
+    const scroll = document.createElement("div");
+    scroll.className = "sidebar-scroll";
+
+    TASK_ORDER.forEach((task) => {
+      if (!tree[task]) return;
+      const taskEl = document.createElement("div");
+      taskEl.className = "nav-task " + task;
+      taskEl.innerHTML = '<h2 class="nav-task-title">' + TASK_LABELS[task] + "</h2>";
+      let taskHasActive = false;
+
+      THEORY_ORDER.forEach((theory) => {
+        if (!tree[task][theory]) return;
+        const details = document.createElement("details");
+        details.className = "nav-theory";
+        const summary = document.createElement("summary");
+        summary.textContent = THEORY_LABELS[theory];
+        details.appendChild(summary);
+        let sectionHasActive = false;
+
+        const sid = sectionId(task, theory);
+        if (opts.expandAll || openSections.has(sid)) {
+          details.open = true;
+        }
+
+        details.addEventListener("toggle", () => {
+          if (details.open) openSections.add(sid);
+          else openSections.delete(sid);
+          writeOpenSections(openSections);
+        });
+
+        const theoryBody = document.createElement("div");
+        theoryBody.className = "nav-theory-body";
+
+        PHASE_ORDER.forEach((phase) => {
+          const phaseEntries = tree[task][theory][phase];
+          if (!phaseEntries) return;
+
+          const phaseEl = document.createElement("div");
+          phaseEl.className = "nav-phase";
+          const phaseIsActive = VARIANT_ORDER.some((vk) => {
+            const item = phaseEntries[vk];
+            return item && pathsMatch(item.href);
+          });
+          if (phaseIsActive) phaseEl.classList.add("has-active");
+          phaseEl.innerHTML = '<div class="nav-phase-label">' + phase + "</div>";
+
+          const links = document.createElement("div");
+          links.className = "nav-links";
+
+          VARIANT_ORDER.forEach((vk) => {
+            const item = phaseEntries[vk];
+            if (!item) return;
+            const a = document.createElement("a");
+            a.href = navLinkHref(item.href);
+            a.textContent = VARIANT_LABELS[vk];
+            if (pathsMatch(item.href)) {
+              a.classList.add("active");
+              a.setAttribute("aria-current", "page");
+              sectionHasActive = true;
+              taskHasActive = true;
+            }
+            links.appendChild(a);
+          });
+
+          phaseEl.appendChild(links);
+          theoryBody.appendChild(phaseEl);
+        });
+
+        if (sectionHasActive) {
+          details.classList.add("has-active");
+          details.open = true;
+        }
+
+        details.appendChild(theoryBody);
+        taskEl.appendChild(details);
+      });
+
+      if (taskHasActive) taskEl.classList.add("has-active");
+      scroll.appendChild(taskEl);
+    });
+
+    root.appendChild(scroll);
+
+    const activeLink = root.querySelector(".nav-links a.active");
+    if (activeLink) {
+      requestAnimationFrame(() => {
+        activeLink.scrollIntoView({ block: "nearest", behavior: "auto" });
+      });
+    }
+  };
+})();
+</script>
+  <script>
+    buildNetworkSidebar(JSON.parse(document.getElementById("nav-data").textContent));
+
+    const DATA = JSON.parse(document.getElementById("network-data").textContent);
+    const SCALE = 1000;
+    const PANEL_PAD = 40;
+
+    document.getElementById("page-title").textContent = DATA.title;
+    document.getElementById("page-subtitle").textContent = DATA.subtitle;
+    document.getElementById("threshold-val").textContent = DATA.threshold.toFixed(3);
+    document.getElementById("quantile-val").textContent = DATA.threshold_quantile_pct + "th";
+    document.getElementById("variant-badge").textContent = DATA.collapsed
+      ? "Two groups (Humans and GenAI)"
+      : "Three groups (PhDs, Senior Scientists, GenAI)";
+
+    const panelsEl = document.getElementById("panels");
+    const detailEl = document.getElementById("detail");
+    const detailHeader = document.getElementById("detail-header");
+    const detailEmpty = document.getElementById("detail-empty");
+    const panelRoots = new Map();
+    let pinnedNode = null;
+    let hoveredNode = null;
+
+    function nodeRadius(degree) {
+      return 9.5 + Math.min(degree, 8) * 1.5;
+    }
+
+    function hitRadius(degree) {
+      return nodeRadius(degree) + 12;
+    }
+
+    function showDetail(node, panel) {
+      detailEmpty.style.display = "none";
+      detailEl.classList.add("visible");
+      detailHeader.style.setProperty("--detail-accent", panel.color);
+      document.getElementById("detail-dot").style.color = panel.color;
+      document.getElementById("detail-group").textContent = panel.title;
+      document.getElementById("detail-name").textContent = node.name;
+      document.getElementById("detail-neighbors").textContent = node.degree;
+      document.getElementById("detail-words").textContent = node.words ?? "—";
+      document.getElementById("detail-explanation").textContent =
+        node.explanation || "(No theory text available for this participant.)";
+    }
+
+    function hideDetail() {
+      if (pinnedNode) return;
+      detailEl.classList.remove("visible");
+      detailEmpty.style.display = "block";
+    }
+
+    function resetAllHighlights() {
+      panelRoots.forEach(root => {
+        root.selectAll(".node").classed("focused faded", false);
+        root.selectAll(".link").classed("highlight faded", false);
+      });
+      document.querySelectorAll(".panel-card").forEach(card => {
+        card.classList.remove("active");
+      });
+    }
+
+    function highlightNode(nodeId, panelId) {
+      resetAllHighlights();
+      const root = panelRoots.get(panelId);
+      const card = document.querySelector(`.panel-card[data-panel-id="${panelId}"]`);
+      if (!root || !card) return;
+
+      card.classList.add("active");
+      const neighborIds = new Set([nodeId]);
+      root.selectAll(".link").each(d => {
+        if (d.source === nodeId || d.target === nodeId) {
+          neighborIds.add(d.source);
+          neighborIds.add(d.target);
+        }
+      });
+
+      root.selectAll(".node")
+        .classed("focused", d => d.id === nodeId)
+        .classed("faded", d => !neighborIds.has(d.id));
+      root.selectAll(".link")
+        .classed("highlight", d => d.source === nodeId || d.target === nodeId)
+        .classed("faded", d => d.source !== nodeId && d.target !== nodeId);
+    }
+
+    function activateNode(node, panel) {
+      hoveredNode = node;
+      highlightNode(node.id, panel.id);
+      showDetail(node, panel);
+    }
+
+    function deactivateNode() {
+      if (pinnedNode) return;
+      hoveredNode = null;
+      hideDetail();
+      resetAllHighlights();
+    }
+
+    function addPanelGrid(svg, panelId) {
+      const patId = `grid-${panelId}`;
+      const defs = svg.append("defs");
+      defs.append("pattern")
+        .attr("id", patId)
+        .attr("width", 28).attr("height", 28)
+        .attr("patternUnits", "userSpaceOnUse")
+        .append("circle")
+        .attr("cx", 1).attr("cy", 1).attr("r", 0.55)
+        .attr("fill", "rgba(15,23,42,0.06)");
+      svg.insert("rect", ":first-child")
+        .attr("width", SCALE).attr("height", SCALE)
+        .attr("fill", `url(#${patId})`);
+    }
+
+    DATA.panels.forEach(panel => {
+      const nodeById = new Map(panel.nodes.map(n => [n.id, n]));
+
+      const card = document.createElement("div");
+      card.className = "panel-card";
+      card.dataset.panelId = panel.id;
+
+      const head = document.createElement("div");
+      head.className = "panel-head";
+      head.innerHTML = `<h2>${panel.title}</h2><span class="dot" style="color:${panel.color}"></span>`;
+      card.appendChild(head);
+
+      const svg = d3.select(card).append("svg")
+        .attr("class", "panel-svg")
+        .attr("viewBox", `0 0 ${SCALE} ${SCALE}`);
+
+      addPanelGrid(svg, panel.id.replace(/\W/g, "_"));
+      const root = svg.append("g");
+      panelRoots.set(panel.id, root);
+
+      const x = d3.scaleLinear().domain([0, 1]).range([PANEL_PAD, SCALE - PANEL_PAD]);
+      const y = d3.scaleLinear().domain([0, 1]).range([SCALE - PANEL_PAD, PANEL_PAD]);
+
+      const links = panel.links.map(l => ({ ...l, panelId: panel.id }));
+      const nodes = panel.nodes.map(n => ({ ...n, panelId: panel.id }));
+
+      root.selectAll(".link")
+        .data(links)
+        .join("line")
+        .attr("class", "link")
+        .attr("stroke-opacity", 0.34)
+        .attr("stroke-width", 1.2)
+        .attr("x1", d => x(nodeById.get(d.source).x))
+        .attr("y1", d => y(nodeById.get(d.source).y))
+        .attr("x2", d => x(nodeById.get(d.target).x))
+        .attr("y2", d => y(nodeById.get(d.target).y));
+
+      const nodeSel = root.selectAll(".node")
+        .data(nodes)
+        .join("g")
+        .attr("class", "node")
+        .attr("transform", d => `translate(${x(d.x)},${y(d.y)})`);
+
+      nodeSel.append("circle")
+        .attr("class", "hit")
+        .attr("r", d => hitRadius(d.degree));
+
+      nodeSel.append("circle")
+        .attr("class", "shell")
+        .attr("r", d => nodeRadius(d.degree) + 4)
+        .attr("stroke", panel.color)
+        .attr("stroke-opacity", 0.35);
+
+      nodeSel.append("circle")
+        .attr("class", "core")
+        .attr("r", d => nodeRadius(d.degree))
+        .attr("fill", panel.color)
+        .attr("fill-opacity", 0.92);
+
+      nodeSel
+        .on("pointerenter", (event, d) => {
+          if (pinnedNode && pinnedNode.id !== d.id) return;
+          activateNode(d, panel);
+        })
+        .on("pointerleave", (event) => {
+          if (pinnedNode) return;
+          const related = event.relatedTarget;
+          if (related && event.currentTarget.contains(related)) return;
+          deactivateNode();
+        })
+        .on("click", (event, d) => {
+          event.stopPropagation();
+          if (pinnedNode && pinnedNode.id === d.id) {
+            pinnedNode = null;
+            deactivateNode();
+            return;
+          }
+          pinnedNode = d;
+          activateNode(d, panel);
+        });
+
+      panelsEl.appendChild(card);
+    });
+
+    document.getElementById("search").addEventListener("input", (e) => {
+      const q = e.target.value.trim().toLowerCase();
+      panelRoots.forEach(root => {
+        root.selectAll(".node").classed("faded", d => q && !d.name.toLowerCase().includes(q));
+        if (!q) root.selectAll(".link").classed("faded highlight", false);
+        else root.selectAll(".link").classed("faded", true).classed("highlight", false);
+      });
+      if (!q && !pinnedNode && !hoveredNode) resetAllHighlights();
+      else if (pinnedNode) highlightNode(pinnedNode.id, pinnedNode.panelId);
+      else if (hoveredNode) highlightNode(hoveredNode.id, hoveredNode.panelId);
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape") return;
+      pinnedNode = null;
+      hoveredNode = null;
+      document.getElementById("search").value = "";
+      hideDetail();
+      resetAllHighlights();
+      panelRoots.forEach(root => {
+        root.selectAll(".node").classed("faded", false);
+      });
+    });
+
+    document.getElementById("canvas-wrap").addEventListener("click", (e) => {
+      if (e.target.closest(".node")) return;
+      if (!pinnedNode) return;
+      pinnedNode = null;
+      hoveredNode = null;
+      hideDetail();
+      resetAllHighlights();
+    });
+  </script>
+</body>
+</html>

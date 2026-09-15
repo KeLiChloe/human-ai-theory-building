@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Semantic Network Explorer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="sidebar.css" />
+  <style>
+    :root {
+      --text: #0f172a;
+      --text-soft: #475569;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      font-family: "DM Sans", system-ui, sans-serif;
+      color: var(--text);
+      background: #ffffff;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <nav id="site-sidebar" class="site-sidebar" aria-label="Network catalog"></nav>
+    <main class="shell-main index-main">
+      <div class="index-welcome">
+        <h2>Semantic Network Explorer</h2>
+        <p class="index-cta">Choose a network from the left sidebar.</p>
+        <dl class="index-glossary">
+          <dt>Node</dt>
+          <dd>Each node represents one participant. Humans are shown as anonymized contributor IDs; GenAI models keep their names.</dd>
+          <dt>Edge</dt>
+          <dd>Semantic similarity between two explanations. An edge is drawn when their embedding cosine similarity meets or exceeds the within-group threshold shown on each network page.</dd>
+        </dl>
+        <p class="index-howto">How to explore</p>
+        <ul>
+          <li>Hover a node to read the contributor ID and full theoretical explanation.</li>
+          <li>Click a node to pin the detail panel; press Esc to clear.</li>
+          <li>Search by contributor ID using the toolbar on each network page.</li>
+        </ul>
+      </div>
+    </main>
+  </div>
+  <script id="index-data" type="application/json">[]</script>
+  <script src="sidebar.js?v=20260718b"></script>
+  <script>
+    (function () {
+      const raw = document.getElementById("index-data").textContent.trim();
+      let entries = [];
+      if (raw.startsWith("[")) {
+        try {
+          entries = JSON.parse(raw);
+        } catch (err) {
+          console.error("Failed to parse index catalog JSON:", err);
+        }
+      }
+      if (typeof buildNetworkSidebar === "function") {
+        buildNetworkSidebar(entries);
+      }
+    })();
+  </script>
+</body>
+</html>

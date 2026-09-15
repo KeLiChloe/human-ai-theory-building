@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Semantic Network</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+  <style>
+    :root {
+      --bg-deep: #ffffff;
+      --bg-mid: #f8fafc;
+      --surface: #ffffff;
+      --surface-elevated: #f8fafc;
+      --stroke: #e2e8f0;
+      --stroke-light: #cbd5e1;
+      --text: #0f172a;
+      --text-soft: #334155;
+      --muted: #64748b;
+      --accent: #2563eb;
+      --accent-dim: rgba(37, 99, 235, 0.12);
+      --gold: #92702a;
+      --sidebar-w: min(440px, 40vw);
+      --radius: 20px;
+      --radius-sm: 12px;
+      --shadow-lg: 0 4px 24px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.04);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      font-family: "DM Sans", system-ui, sans-serif;
+      color: var(--text);
+      background: var(--bg-deep);
+      overflow: hidden;
+    }
+
+    .shell {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  height: 100vh;
+  min-height: 0;
+}
+
+.site-sidebar {
+  width: 300px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #e2e8f0;
+  background: #f8fafc;
+  min-height: 0;
+}
+
+.sidebar-brand {
+  padding: 1.15rem 1.1rem 0.9rem;
+  border-bottom: 1px solid #e2e8f0;
+  flex-shrink: 0;
+}
+
+.sidebar-brand a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.sidebar-brand .eyebrow {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #92702a;
+  margin-bottom: 0.35rem;
+}
+
+.sidebar-brand h1 {
+  margin: 0;
+  font-family: "Instrument Serif", Georgia, serif;
+  font-size: 1.35rem;
+  font-weight: 400;
+  line-height: 1.15;
+  color: #0f172a;
+}
+
+.sidebar-scroll {
+  flex: 1;
+  overflow: auto;
+  padding: 0.65rem 0.55rem 1rem;
+}
+
+.nav-task {
+  margin-bottom: 0.85rem;
+}
+
+.nav-task-title {
+  margin: 0 0 0.35rem;
+  padding: 0.35rem 0.55rem;
+  font-family: "Instrument Serif", Georgia, serif;
+  font-size: 1.15rem;
+  font-weight: 400;
+  color: #1e293b;
+}
+
+.nav-task.race .nav-task-title { color: #854d0e; }
+.nav-task.gender .nav-task-title { color: #1d4ed8; }
+
+.nav-theory {
+  margin-bottom: 0.35rem;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.nav-theory summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 0.5rem 0.55rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  user-select: none;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+
+.nav-theory summary::-webkit-details-marker { display: none; }
+
+.nav-theory summary::before {
+  content: "";
+  width: 0.4rem;
+  height: 0.4rem;
+  border-right: 2px solid #475569;
+  border-bottom: 2px solid #475569;
+  transform: rotate(-45deg);
+  flex-shrink: 0;
+  transition: transform 0.2s;
+}
+
+.nav-theory[open] summary::before {
+  transform: rotate(45deg);
+  margin-top: -0.1rem;
+}
+
+.nav-theory summary:hover { background: #eef2f7; }
+
+.nav-phase {
+  padding: 0.15rem 0.35rem 0.35rem 1.15rem;
+}
+
+.nav-phase-label {
+  margin: 0.35rem 0 0.25rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.nav-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-bottom: 0.25rem;
+}
+
+.nav-task.has-active > .nav-task-title {
+  font-weight: 600;
+}
+
+.nav-task.race.has-active > .nav-task-title { color: #92400e; }
+.nav-task.gender.has-active > .nav-task-title { color: #1d4ed8; }
+
+.nav-theory.has-active > summary {
+  color: #1e40af;
+  font-weight: 700;
+}
+
+.nav-phase.has-active > .nav-phase-label {
+  color: #1d4ed8;
+  font-weight: 700;
+}
+
+.nav-links a {
+  display: block;
+  text-decoration: none;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: #475569;
+  padding: 0.38rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  border-left: 3px solid transparent;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.nav-links a:hover {
+  color: #0f172a;
+  background: #e8f2ff;
+  border-color: #bfdbfe;
+  border-left-color: #93c5fd;
+}
+
+.nav-links a.active {
+  color: #1e3a8a;
+  background: #dbeafe;
+  border-color: #93c5fd;
+  border-left-color: #2563eb;
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.12);
+}
+
+.shell-main {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.shell-main.index-main {
+  overflow: auto;
+}
+
+.index-welcome {
+  padding: 2.5rem 2.25rem 3rem;
+  max-width: 52rem;
+}
+
+.index-welcome h2 {
+  margin: 0 0 0.75rem;
+  font-family: "Instrument Serif", Georgia, serif;
+  font-size: clamp(1.75rem, 3vw, 2.35rem);
+  font-weight: 400;
+  color: #0f172a;
+}
+
+.index-welcome p {
+  margin: 0 0 1rem;
+  color: #475569;
+  line-height: 1.65;
+  font-size: 0.95rem;
+}
+
+.index-welcome .index-cta {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.index-welcome .index-glossary {
+  margin: 0 0 1.25rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.index-welcome .index-glossary dt {
+  margin: 0 0 0.25rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #334155;
+}
+
+.index-welcome .index-glossary dd {
+  margin: 0 0 0.85rem;
+  color: #475569;
+  line-height: 1.6;
+  font-size: 0.9rem;
+}
+
+.index-welcome .index-glossary dd:last-child {
+  margin-bottom: 0;
+}
+
+.index-welcome .index-howto {
+  margin: 0 0 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.index-welcome ul {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: #64748b;
+  line-height: 1.7;
+  font-size: 0.9rem;
+}
+
+
+
+    .app {
+      position: relative;
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      height: 100%;
+      min-height: 0;
+    }
+
+    header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1.5rem;
+      padding: 1.25rem 1.75rem 1.1rem;
+      border-bottom: 1px solid var(--stroke);
+      background: #ffffff;
+    }
+
+    .title-wrap h1 {
+      margin: 0;
+      font-family: "Instrument Serif", Georgia, serif;
+      font-size: clamp(1.65rem, 2.5vw, 2.35rem);
+      font-weight: 400;
+      line-height: 1.1;
+      letter-spacing: -0.01em;
+      color: var(--text);
+    }
+
+    .title-wrap p {
+      margin: 0.5rem 0 0;
+      color: var(--text-soft);
+      font-size: 0.92rem;
+      font-weight: 400;
+      letter-spacing: 0.01em;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      justify-content: flex-end;
+      align-items: flex-start;
+    }
+
+    .badge {
+      border: 1px solid var(--stroke-light);
+      background: #f8fafc;
+      border-radius: 999px;
+      padding: 0.48rem 0.9rem;
+      font-size: 0.76rem;
+      color: var(--muted);
+      white-space: nowrap;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+
+    .badge strong { color: var(--text); font-weight: 600; }
+    .badge.accent {
+      border-color: #bfdbfe;
+      background: #eff6ff;
+      color: var(--text-soft);
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      padding: 0.7rem 1.75rem;
+      border-bottom: 1px solid var(--stroke);
+      background: #f8fafc;
+    }
+
+    .search {
+      flex: 1;
+      max-width: 380px;
+      position: relative;
+    }
+
+    .search input {
+      width: 100%;
+      border: 1px solid var(--stroke-light);
+      background: #ffffff;
+      color: var(--text);
+      border-radius: var(--radius-sm);
+      padding: 0.68rem 0.95rem 0.68rem 2.4rem;
+      font: inherit;
+      font-size: 0.88rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    }
+
+    .search input::placeholder { color: var(--muted); }
+
+    .search input:focus {
+      border-color: #93c5fd;
+      background: #ffffff;
+      box-shadow: 0 0 0 3px var(--accent-dim);
+    }
+
+    .search svg {
+      position: absolute;
+      left: 0.9rem;
+      top: 50%;
+      transform: translateY(-50%);
+      opacity: 0.45;
+      color: var(--muted);
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 0.8rem;
+      letter-spacing: 0.02em;
+      padding: 0.35rem 0.75rem;
+      border-radius: 999px;
+      border: 1px solid var(--stroke);
+      background: #ffffff;
+    }
+
+    .main {
+      display: grid;
+      grid-template-columns: 1fr var(--sidebar-w);
+      min-height: 0;
+    }
+
+    .canvas-wrap {
+      overflow: auto;
+      padding: 1rem 1.25rem 1.5rem 1.75rem;
+    }
+
+    .panels {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.15rem;
+      align-content: start;
+    }
+
+    .panel-card {
+      border: 1px solid var(--stroke-light);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .panel-card.active {
+      border-color: #93c5fd;
+      box-shadow:
+        0 0 0 1px rgba(37, 99, 235, 0.12),
+        0 12px 32px rgba(15, 23, 42, 0.1);
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.85rem 1.1rem 0.7rem;
+      border-bottom: 1px solid var(--stroke);
+      background: #f8fafc;
+    }
+
+    .panel-head h2 {
+      margin: 0;
+      font-size: 0.88rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      color: var(--text-soft);
+    }
+
+    .panel-head .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      box-shadow: 0 0 12px currentColor;
+    }
+
+    .panel-svg {
+      width: 100%;
+      aspect-ratio: 1;
+      display: block;
+      background: #fafbfc;
+    }
+
+    .link {
+      stroke: #6b7c8f;
+      stroke-linecap: round;
+      pointer-events: none;
+      transition: stroke-opacity 0.2s, stroke-width 0.2s;
+    }
+
+    .node { cursor: pointer; }
+    .node .hit { fill: transparent; stroke: none; pointer-events: all; }
+    .node .shell, .node .core { pointer-events: none; }
+
+    .node circle.shell {
+      fill: rgba(15, 23, 42, 0.04);
+      stroke-width: 1.5px;
+    }
+
+    .node circle.core {
+      stroke: rgba(255, 255, 255, 0.95);
+      stroke-width: 1.2px;
+      transition: filter 0.15s ease;
+    }
+
+    .node.faded { opacity: 0.2; }
+    .link.faded { stroke-opacity: 0.08; }
+    .node.focused circle.core { filter: drop-shadow(0 0 6px rgba(37, 99, 235, 0.35)); }
+    .link.highlight {
+      stroke: var(--accent);
+      stroke-opacity: 0.85;
+      stroke-width: 2.2px;
+    }
+
+    .detail-aside {
+      border-left: 1px solid var(--stroke-light);
+      background: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      box-shadow: -4px 0 16px rgba(15, 23, 42, 0.04);
+    }
+
+    .detail-empty {
+      margin: auto;
+      text-align: center;
+      padding: 2.5rem 2rem;
+      color: var(--muted);
+      max-width: 28ch;
+      line-height: 1.6;
+      font-size: 0.9rem;
+    }
+
+    .detail-empty .orb {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 1.25rem;
+      border-radius: 50%;
+      border: 1px solid var(--stroke-light);
+      background: radial-gradient(circle at 35% 30%, rgba(37,99,235,0.12), transparent 60%);
+      position: relative;
+    }
+    .detail-empty .orb::after {
+      content: "";
+      position: absolute;
+      inset: 18px;
+      border-radius: 50%;
+      border: 1px dashed rgba(37,99,235,0.25);
+    }
+
+    .detail {
+      display: none;
+      flex-direction: column;
+      min-height: 0;
+      height: 100%;
+    }
+
+    .detail.visible { display: flex; }
+
+    .detail-header {
+      padding: 1.5rem 1.5rem 1rem;
+      border-bottom: 1px solid var(--stroke);
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    .detail-header::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 1.25rem;
+      bottom: 1rem;
+      width: 3px;
+      border-radius: 0 2px 2px 0;
+      background: var(--detail-accent, var(--accent));
+      box-shadow: 0 0 8px rgba(37, 99, 235, 0.2);
+    }
+
+    .detail-header .group-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      margin-bottom: 0.6rem;
+      padding-left: 0.75rem;
+    }
+
+    .detail-header h3 {
+      margin: 0;
+      padding-left: 0.75rem;
+      font-family: "Instrument Serif", Georgia, serif;
+      font-size: 1.75rem;
+      line-height: 1.15;
+      font-weight: 400;
+      color: var(--text);
+    }
+
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      margin-top: 1rem;
+      padding-left: 0.75rem;
+    }
+
+    .stat {
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius-sm);
+      padding: 0.4rem 0.7rem;
+      font-size: 0.74rem;
+      color: var(--muted);
+      background: #ffffff;
+    }
+
+    .stat b { color: var(--text-soft); font-weight: 600; }
+
+    .detail-body {
+      padding: 1.15rem 1.5rem 1.75rem;
+      overflow: auto;
+      flex: 1;
+    }
+
+    .detail-body h4 {
+      margin: 0 0 0.75rem;
+      font-size: 0.72rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .explanation {
+      font-size: 0.93rem;
+      line-height: 1.72;
+      color: var(--text-soft);
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <nav id="site-sidebar" class="site-sidebar" aria-label="Network catalog"></nav>
+    <div class="shell-main">
+  <div class="app">
+    <header>
+      <div class="title-wrap">
+        <h1 id="page-title">Semantic Network</h1>
+        <p id="page-subtitle"></p>
+      </div>
+      <div class="meta">
+        <div class="badge">cosine ≥ <strong id="threshold-val"></strong></div>
+        <div class="badge"><strong id="quantile-val"></strong> percentile</div>
+        <div class="badge accent" id="variant-badge"></div>
+      </div>
+    </header>
+
+    <div class="toolbar">
+      <label class="search">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+        <input id="search" type="search" placeholder="Search by contributor ID…" autocomplete="off" />
+      </label>
+      <div class="hint">Hover a node; click to pin.</div>
+    </div>
+
+    <div class="main">
+      <div class="canvas-wrap" id="canvas-wrap">
+        <div class="panels" id="panels"></div>
+      </div>
+      <aside class="detail-aside">
+        <div class="detail-empty" id="detail-empty">
+          <div class="orb"></div>
+          <div>Hover any node to reveal the contributor ID and their theoretical explanation.</div>
+        </div>
+        <div class="detail" id="detail">
+          <div class="detail-header" id="detail-header">
+            <div class="group-pill"><span class="dot" id="detail-dot"></span><span id="detail-group"></span></div>
+            <h3 id="detail-name"></h3>
+            <div class="stats">
+              <div class="stat">Neighbors <b id="detail-neighbors"></b></div>
+              <div class="stat">Words <b id="detail-words"></b></div>
+            </div>
+          </div>
+          <div class="detail-body">
+            <h4>Theory explanation</h4>
+            <div class="explanation" id="detail-explanation"></div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+    </div>
+  </div>
+
+  <script id="network-data" type="application/json">{"title": "Semantic Network", "subtitle": "Race · Interactions · Pre ML", "threshold": 0.7732, "threshold_quantile_pct": 85, "collapsed": false, "panels": [{"id": "student", "title": "PhD Students (n=60)", "color": "#7DB7E8", "nodes": [{"id": "student-0", "name": "phd_contributor_wbgok", "x": 0.25122565649090367, "y": 0.4756799884182181, "degree": 3, "words": 92, "explanation": "The positive effect of having a racially diverse author team on discussing racial inequality should be higher in social science. Existing work in inequality should increase the probability of discussing racial inequality in social science. My third choice might be a bit harder to defend but since US is the center for most research areas, and hispanic community is large there, I feel like as the share of hispanic representation in the author team increases, probability of a racial inequality paper also increases and this increase should be higher in social science."}, {"id": "student-1", "name": "phd_contributor_ul2n5", "x": 0.19666222171145473, "y": 0.24804499699373195, "degree": 0, "words": 106, "explanation": "White people are less likely to be interested in racial inequality because they have not been directly or indirectly exposed to racism to the same extent non-white people have. This effect is lessened when the researcher is female, since women, due to direct and indirect exposure, are more likely to be interested in gender inequality, which share some structural similarities with racial inequalities. Lastly, this effect will be lessened when there is prevalent coverage of racial inequalities in the news and in academic publications, since this can make white people more interested in the topic in general and consider it more as a possible research area."}, {"id": "student-2", "name": "phd_contributor_yedjp", "x": 0.2735149798667849, "y": 0.381960260106809, "degree": 0, "words": 73, "explanation": "the likelihood of black scholars publishing in the topic will increase as there are more events, indicated by increase in news reports, that are currently relatable for them. Social science scholars are more likely to publish the topic, as they observe more papers importantly dealing with the issues in recent years. White scholars, who are less likely to publish inequality issue, are more likely to publish when working with diverse set of scholars."}, {"id": "student-3", "name": "phd_contributor_c5sgk", "x": 0.16793010023798732, "y": 0.7038626141042584, "degree": 0, "words": 76, "explanation": "I posited that the likelihood of a published paper discusses racial inequality is driven by two mechanisms: the volume of racial inequality submissions and the probability that such submissions are accepted. However, journal disciplinary orientation may be crucial because the acceptance probability for racial inequality submissions may approach zero in non-social science disciplines. In such cases, the variables influencing submission volume and acceptance likelihood may be stronger in social science journals rather than in other journals."}, {"id": "student-4", "name": "phd_contributor_45ypj", "x": 0.49350742291481753, "y": 0.7088858533806403, "degree": 0, "words": 77, "explanation": "Female authors may feel more comfortable tackling racial inequality research questions in a diverse team, which would attenuate my previously assumed negative direct effect of female. In contrast, having a higher share of white authors on the team may exacerbate my previously assumed negative direct effect of female. Diverse groups of scholars may be more attuned to developments of publications in the research area, hence the positive effect of prior paper mentions may be exacerbated for them."}, {"id": "student-5", "name": "phd_contributor_5nazt", "x": 0.3973727352594413, "y": 0.9199999999999999, "degree": 0, "words": 27, "explanation": "I think a social science journal reaches a large audience, and as the number of papers and news articles increases, their combined effect can therefore predict race."}, {"id": "student-6", "name": "phd_contributor_mdmrd", "x": 0.31053954505256387, "y": 0.5961414804618024, "degree": 10, "words": 123, "explanation": "I would assume that the higher the share of black authors in a social science paper, the more likely the this paper is about racial inequality. Similarly, news_inequality_mentions should reinforce the share of racial inequality topics in social science papers. This is because African American are relatively speaking more prone to be victims of racial inequality and receive the most media coverage. Together, the two factors should reinforce each other such that when news cover more racial inequality and the authors are mostly made-up of black researchers, the probability of the topic being racial inequality rated should be higher. Finally, I assume a paper by mostly Asian authors published in a engineering and technology journal to be least likely to discuss racial inequality."}, {"id": "student-7", "name": "phd_contributor_kmwj4", "x": 0.2725534715816214, "y": 0.7442231797272884, "degree": 0, "words": 96, "explanation": "Similar situation to gender inequality: as the number of authors increases, the diversity score becomes a more important signal (in terms of how much it deviates from a representative sample), and so does the proportion of Black authors (they seem about equally likely to be important). But if there are more mentions of inequality in papers, then the fact that the journal is on engineering and technology should not be as important - though I think the number-of-authors factor would matter more just because the mathematics makes it harder to tell a convincing alternative just-so story."}, {"id": "student-8", "name": "phd_contributor_zbjey", "x": 0.562383317688534, "y": 0.8775823051248346, "degree": 0, "words": 36, "explanation": "If they are social science or news/papers related to female, it will direct the audience more towards gender issues. I believe they are not talking mainly about racial inequality. Therefore, I gave them all negative signs."}, {"id": "student-9", "name": "phd_contributor_2xy9o", "x": 0.514902088415137, "y": 0.5200114333330477, "degree": 5, "words": 255, "explanation": "For the following 3 interaction effects: - country_race_diversity_score is a continuous variable that should correlate to mentions of racial inequality (think of authors living in USA for example). When news relating to racial inequality (economic or political), it triggers many different reactions from people, including researchers (emotional intensity, racial saliency, belief of a degradation in racial concerns due to news saliency). Hence, news relating to inequality in general should trigger that of which relates to racial inequalities because they are prevalent in race diverse countries, leading to an increase in papers tackling racial inequality. - Due to the specific circumstances surrounding black communities in diverse western countries (USA, France, UK), relating to higher levels of poverty, single motherhood, crime and assault rates, it is reasonable to say that black individuals would be exposed to these adverse effects of life, due to being directly part of that environment, or knowing people within that area. Hence the mentioning of news related to inequality could enhance the saliency of their personal experiences, leading to higher levels of papers on racial inequality when the share of black authors are higher. - This final interaction effect is related to the concern that I addressed earlier, on how different countries influence the saliency of racial concerns in general. If authors' country of origin has a higher race diversity score, then they are more likely to engage in topics related to racial issues in social sciences. For more homogenous countries, they would be interested in social topics relating to non racial issues."}, {"id": "student-10", "name": "phd_contributor_z7ttj", "x": 0.44355918549270085, "y": 0.7139819701076081, "degree": 0, "words": 113, "explanation": "The \"Hispanic and Other\" identifier is ranked as a primary positive predictor because marginalized groups often possess the \"positional knowledge\" required to investigate racial stratification, whereas the \"White\" and \"Asian\" identifiers are expected to have negative signs, assuming these groups are more likely to align with dominant, race-blind academic traditions or technical disciplines. \"Paper Inequality\" is a crucial positive indicator because it serves as a direct thematic precursor; a study already quantifying disparity is statistically adjacent to race inequality research. Conversely, \"Natural Science\" and \"Engineering and Technology\" are expected to have strong negative signs because these fields are \"topic-constrained,\" prioritizing objective physical or technical systems over the socio-political structures necessary to analyze race."}, {"id": "student-11", "name": "phd_contributor_le01h", "x": 0.3601957788782589, "y": 0.5968287486212054, "degree": 10, "words": 102, "explanation": "In the first case, when a paper is dominated by asian authors and the paper is published in engineering and technology, the paper tends to be irrelevant in discussion of racial inequality so it should a strong negative predictor of second order interaction. On the other hand, social science paper with high author diversity implies a higher probability to discuss raical inequality because a paper regarding race may need different perspective from different races so a cross-race collaboration is likely. Finally, I guessed that a social science paper published by a minority group like black tend to be discussing social inequality issues."}, {"id": "student-12", "name": "phd_contributor_giyw7", "x": 0.42461477243751167, "y": 0.5236536942359246, "degree": 6, "words": 104, "explanation": "all are positively predictive here. first is social science x black -- this combines representation with the disciplinary focus. second is social science x authors_race_diversity -- I theorize that racially diverse teams which work in inequality-focused disciplines (like social sciences) will be especially likely to produce work on racial inequality third, i ranked black x paper_inequality_mentions. I might be overweighting the impact of agenda setting/disciplinary focus over time, but I'm theorizing that when inequality becomes more salient in the academy, then scholars of color and particularly Black scholars might have the ability and opportunity to frame their research around racial inequality if they wish."}, {"id": "student-13", "name": "phd_contributor_7x004", "x": 0.8308776028044683, "y": 0.33546792142487575, "degree": 0, "words": 13, "explanation": "I think individually are positively associated, and the interactions are also positive associated."}, {"id": "student-14", "name": "phd_contributor_ayd29", "x": 0.455455530466839, "y": 0.3850473519781935, "degree": 5, "words": 267, "explanation": "The interaction between social_science and black (+) is likely the most important because being a Black scholar in a social science discipline combines both the methodological tools and the positional knowledge needed to study racial inequality. A Black author in engineering may lack the disciplinary framing to study racial topics, and a non-Black social scientist may study inequality but not necessarily racial inequality. Together, these two features reinforce each other. The social science discipline provides the intellectual infrastructure while Black identity provides the motivation and perspective, making racial inequality research especially likely. The interaction between social_science and female (+) follows similar logic. Female scholars in social science disciplines are more likely to study marginalization and justice topics broadly, and the social science setting gives them the framework to channel that orientation toward racial inequality specifically. Outside social science, being female may not translate into racial inequality research, and within social science, being male does not preclude it but makes it somewhat less likely. The two features reinforce each other, though less strongly than the social_science and black interaction since female identity is more directly linked to gender inequality than racial inequality. The interaction between black and female (+) captures the idea of intersectionality — Black female scholars may be especially drawn to racial inequality research because they experience compounded marginalization. The combination of racial and gender identity may create a stronger orientation toward studying systemic inequities than either identity alone. This is consistent with intersectionality theory, which suggests that overlapping social identities produce distinct perspectives and research motivations that are more than the sum of their parts."}, {"id": "student-15", "name": "phd_contributor_558ea", "x": 0.11146566044580464, "y": 0.7119491850403926, "degree": 0, "words": 38, "explanation": "If a paper is both \"Social Science\" and \"Engineering and Technology\", then it could discuss racial inequality in the Engineering and Technology field. However, if it's just Engineering and Technology paper, then it's unlikely to discuss racial inequality."}, {"id": "student-16", "name": "phd_contributor_dwdg8", "x": 0.21434594024436443, "y": 0.5073570448679914, "degree": 8, "words": 50, "explanation": "I think more authors and more race diversity of authors will increase the possibility of a paper discusses racial inequality. Similarly, more authors working in social science research area and more black people in a country that is more diverse will increase the possibility of a paper discusses racial inequality."}, {"id": "student-17", "name": "phd_contributor_fojz7", "x": 0.34835265179492864, "y": 0.5561906008202133, "degree": 22, "words": 92, "explanation": "Social_science x black is likely positive since racial inequality research is concentrated in social sciences, and Black authors may increase the likelihood that racial issues are explicitly addressed. They reinforce attention to racial inequality. For black x paper_inequality_mentions_3_years, it should be positive Black authorship may further increase the probability that inequality is framed in racial terms after seeing peer academic papers on similar issues. For social_science x paper_inequality_mentions_3_years, it's also likely positive, as inequality-focused trends within social science disciplines are especially likely to sustain and deepen discussion of racial inequality over time."}, {"id": "student-18", "name": "phd_contributor_ogfiu", "x": 0.3147011248867356, "y": 0.08, "degree": 0, "words": 57, "explanation": "I believe that human beings have a natural tendency to investigate problems that they encounter themselves (like we see in user entrepreneurship or women doctors researching diseases/syndromes such as endometriosis). I would assume fewer White male researchers doing research on racial inequality than racial minority researchers or women who may have paid the price of the inequality"}, {"id": "student-19", "name": "phd_contributor_rvget", "x": 0.9199999999999999, "y": 0.6810118103889109, "degree": 0, "words": 26, "explanation": "If two features share the same channel of affecting the prediction, adding the interaction term of these two features will weaken each other's influence on Y."}, {"id": "student-20", "name": "phd_contributor_zcof0", "x": 0.4256562515342718, "y": 0.272138919733264, "degree": 0, "words": 103, "explanation": "These factors naturally amplify each other, which is why they all have positive signs. A diverse team is more likely to study racial inequality, but that effect really takes off if they work in the social sciences where this research is a core focus. Similarly, when inequality is all over the news, social scientists are the ones who turn that public interest into academic papers. Finally, diverse research teams are probably more sensitive to those news trends in the first place. Essentially, the right academic field, internal team perspective, and external societal timing all reinforce each other to produce this kind of research."}, {"id": "student-21", "name": "phd_contributor_yg9p5", "x": 0.31575850745879724, "y": 0.5311214654595947, "degree": 15, "words": 152, "explanation": "social_science, paper_inequality_mentions_3_years: I think that although the social science field already provides a home for studying racial inequality, a high volume of recent academic publications on the topic signals a hot research trend/topic. This can act as a multiplier, encouraging more authors to frame their work around this topic to meet current peer-review interests. And the interaction should thus be positive. authors_race_diversity_score, news_inequality_mentions_3_years: A racially diverse team often brings a broader range of perspectives to a project. They are more likely to possess the experience and interest to study racial inequality. When there is more news coverage, the public interest serves as a catalyst, increasing the chance for them to publish on these topics. social_science, female: Female authors may be more likely to engage in pro-social research or studies focusing on racial in general, and this effect may be more pronounced in social science because the field encourages pursuit of such topics."}, {"id": "student-22", "name": "phd_contributor_5wz57", "x": 0.15528664212309168, "y": 0.6029312620162838, "degree": 5, "words": 81, "explanation": "1. If it is a social science paper from author's country with diverse race, it is likely to discuss the race diversity and race inequality. 2. If the paper is in engineering and technology, citing inequality papers. It is more likely that the paper is in technological inequality instead of race inequality. 3. If the authors come from racial background such as hispanic and they also refer to paper inequality, it is more likely they have research interest in this area."}, {"id": "student-23", "name": "phd_contributor_wqux6", "x": 0.24607971722915484, "y": 0.6152838416409773, "degree": 9, "words": 86, "explanation": "If the inequality related topics are published in the past 3 years, and the paper is a social_science paper, it would be a stronger indicator that the paper could be a racial inequality paper. Similar logic for the news inequality mentions. Finally, if the paper is a social science paper, and the authors are of different races, it would be more likely that the paper could be focusing on racial inequalities because the author team could be using their strenghten networks and experiences for the publication."}, {"id": "student-24", "name": "phd_contributor_mcaaw", "x": 0.35422824500613553, "y": 0.37181229000949206, "degree": 0, "words": 65, "explanation": "I think all of these are likely to have a positive relationship. My theory is that natural science papers rarely discuss racial inequality, but there may be some that do. These papers are likely during the periods where racial inequality is really popular in the public/academic discourse, and they will likely have more diverse author teams discussing their own experience with racial inequality in science."}, {"id": "student-25", "name": "phd_contributor_1kwwe", "x": 0.5387059259028022, "y": 0.643015143813103, "degree": 0, "words": 101, "explanation": "The first two categories are the same as for the gender version, as (social science, news mentions) determines the popularity and how timely the research is within the research community; and (news mentions, paper mentions), though a bit repetitive with the first one but I still believe will be picked up by the ML model, jointly determines the popularity of the racial-equity research within the society. Finally, (social science, black) jointly determines the relevance of the research for the scholar themselves, where the relevance is in terms of both relevance to the field and the relevance to their own social groups."}, {"id": "student-26", "name": "phd_contributor_iv4qg", "x": 0.3700286480435035, "y": 0.6844168865504623, "degree": 4, "words": 29, "explanation": "country_race_diversity_score, paper_inequality_mentions_3_years, and news_inequality_mentions_3_years all indicate that the paper is more likely to discuss racial inequality, but only if the paper studys social science. Therefore, social_science reinforces their effects."}, {"id": "student-27", "name": "phd_contributor_c9vs4", "x": 0.7807773706388278, "y": 0.14546055413029568, "degree": 0, "words": 35, "explanation": "My reasoning for choosing these interactions and their signs is based on my own limited observations. While I do not have a formal theoretical explanation, I have noticed that these factors appear together very frequently."}, {"id": "student-28", "name": "phd_contributor_mrqrj", "x": 0.2943308609910345, "y": 0.4454863499370312, "degree": 4, "words": 74, "explanation": "Because race is a politically charged topic, news inequality mentions in the last 3 years may be predictive. Social science aligns with these issues and would move hand-in-hand with news inequality mentions. A more diverse author group could also be more likely to do research in this area as the news talks about it more. Similarly, a country that is overall more diverse could also play a role in having a positive interaction effect."}, {"id": "student-29", "name": "phd_contributor_zi2lh", "x": 0.19256261817603765, "y": 0.5312478787297928, "degree": 4, "words": 63, "explanation": "Black authors in social science are more likely to discuss race than not in social science. With increasing diversity in author countries, the higher proportion of black authors are more vocal about race. Race in natural sciences is not necessarily a strong predictor of racial inequality, so the effect of race on racial inequality paper is heterogeneous based on field of the paper."}, {"id": "student-30", "name": "phd_contributor_559wp", "x": 0.4548730920644258, "y": 0.5810091014018685, "degree": 6, "words": 122, "explanation": "First of all, I think the social_science is the key factor here because there must be a huge difference for the number of racial inequality studies between social science journals and other ares. Therefore, the interaction between social_science and authors_race_diversity_score is positive because when the diversity for authors is positively related to racial inequality research and this association should be more obvious in social science area. Social_science and white has the author diversity logic behind. In social science there should be more racial inequality reserach and probably these research was done by non-white authors mostly, so the interaction is negative. Similarly, if there are more papers in this area in social science before the published studies, the number of published studies decreases."}, {"id": "student-31", "name": "phd_contributor_34xvl", "x": 0.2546981723478211, "y": 0.7126176535930339, "degree": 1, "words": 60, "explanation": "Similar reasoning to previously. - Papers in natural_science and engineering_and_technology with large consortia of authors are often focused on hard science topics, and perhaps the only papers that discuss racial inequalities are commentaries with few authors. - Perhaps natural_science X black is positive as the only papers in natural science discussing about racial inequalities are commentaries from predominantly black authors"}, {"id": "student-32", "name": "phd_contributor_kyj4r", "x": 0.39568938519224656, "y": 0.3134494940399614, "degree": 0, "words": 61, "explanation": "1. Social science researchers have more interests and tendency to talk about the racial issue (not restricted in black guys), which will weaken the black variable's effect on Y. 2. Social science researchers will focus more on \"trendy\" social issues (they have more concentrated common interests), which will strengthen paper_inequality_mentions_3_years on Y. 3. The reason is the same to point 1."}, {"id": "student-33", "name": "phd_contributor_ama1n", "x": 0.20738597759999627, "y": 0.21265556802902502, "degree": 0, "words": 49, "explanation": "for black individuals to pursue a project in racial inequality, they probably need to be in a country with strong racial diversity, and they are much more likely to pursue that when inequality issue is very prominent and when there are well-established literature that enable them to build upon."}, {"id": "student-34", "name": "phd_contributor_0k61g", "x": 0.49182447693710624, "y": 0.436663109087955, "degree": 6, "words": 69, "explanation": "These interaction terms are probably all positive because, combined, they become stronger indicators of interest in studying racially related problems, though the main effects already have a positive effect on the likelihood of a racial inequality paper. I think black people studying social science is a very strong signal, followed by the overall trends in the country and the academics, and by the trend and the author's own identity."}, {"id": "student-35", "name": "phd_contributor_dpw1t", "x": 0.46517982228762217, "y": 0.5029897012549276, "degree": 14, "words": 232, "explanation": "I expect all three interactions to be positive because, in each case, the two predictors likely reinforce rather than weaken each other’s influence on whether a paper discusses racial inequality. First, the interaction between social_science and black should be positive because the influence of Black representation among authors is likely stronger in disciplines where race and inequality are already central research themes. In social science contexts, a higher share of Black authors may more strongly translate into explicit engagement with racial inequality topics than it would in fields where such issues are less central. Second, I expect a positive interaction between social_science and authors_race_diversity_score because team racial diversity may be especially consequential in fields that are already normatively and intellectually oriented toward inequality. In these disciplines, diverse perspectives may be more likely to shape topic selection toward racial inequality, whereas in other fields diversity may not affect research focus as directly. Finally, I expect a positive interaction between black and paper_inequality_mentions_3_years. When racial or broader inequality topics are already salient in recent academic publications, the presence of more Black authors may further increase the likelihood of directly engaging with racial inequality. In periods when inequality is less prominent in scholarship, the marginal effect of author composition may be weaker. Overall, these interactions reflect the idea that disciplinary context, author identity, and broader academic momentum can amplify one another in shaping research topics."}, {"id": "student-36", "name": "phd_contributor_1gofd", "x": 0.205203487618821, "y": 0.6169416591951243, "degree": 6, "words": 86, "explanation": "If the paper is in social science and mention other papers about inequality in 3 years, more likely it is about racial inequalities. If the paper is in social science and mention news articles about inequality in 3 years, more likely it is about racial inequalities. If the paper has both news and papers about racial inequality more likely it is about racial inequalities. Others looks less relavent. Authors' positionalities in theory should play little to no roles in whether their view is progressive or not."}, {"id": "student-37", "name": "phd_contributor_4luvh", "x": 0.34770821910038335, "y": 0.46592832088998126, "degree": 13, "words": 149, "explanation": "While news mentions and paper mentions of racial inequality can both serve as the source of researcher's perceived importance of this issue, I think if both news and paper mentions of racial inequality in previous years are higher, it suggests that both the academia and the public are interested in and care about this issue. Therefore, I would think that this will add additional incentive to researchers' study of the topic, thus the production of relevant papers. For the other two interactions, my considerations are mainly based on observations that the racial inequality discussion is mainly focused on black and hispanic groups. If the black or hispanic authors demonstrate higher share, while the authors are likely to come from countries with high racial diversity, I think the author list will care more about the issue of racial inequality, so the probability to produce relevant papers should be further higher."}, {"id": "student-38", "name": "phd_contributor_mfkek", "x": 0.40055098456608895, "y": 0.4707243307506413, "degree": 14, "words": 132, "explanation": "These interactions reflect the idea that research on racial inequality is shaped by both disciplinary context and researcher identity, as well as responsiveness to societal conditions. The positive social_science × black interaction assumes that Black scholars may be more likely to study racial inequality, and this tendency is strongest in social science fields where race is a central and legitimate topic of inquiry. The positive social_science × news_inequality_mentions_3_years interaction reflects the assumption that social sciences are especially responsive to public debates, so increased media attention to inequality amplifies their likelihood of producing racial-inequality research. Finally, the positive black × paper_inequality_mentions_3_years interaction reflects path dependence: when researchers are already engaged in inequality-related work, the presence of Black authors further reinforces attention to racial inequality, making the combined effect stronger than either factor alone."}, {"id": "student-39", "name": "phd_contributor_81m5u", "x": 0.30673526828357967, "y": 0.8438592428784784, "degree": 0, "words": 92, "explanation": "1. number of authors x country_race_diversity_score measures the total impact of diverse culture on the team. A higher score leads to a higher possibility of the team working on diversity-related issues. 2. number of authors x white shows the total number of white people in the author team. More white people may give a sign on working on more traditional studies. 3. number of authors x author_race_diversity_score shows the total racial diversity of the team. A larger and more diversity team may work on topics that is more related to racial inequality"}, {"id": "student-40", "name": "phd_contributor_blzc1", "x": 0.6830330181823117, "y": 0.5879624557164607, "degree": 0, "words": 74, "explanation": "I would focus on interactions that combine the strongest first-order factors: social_science × paper_inequality_mentions_3_years and social_science × news_inequality_mentions_3_years (since both variables are strong positive indicators in the first-order setting). I would also include a trend–trend interaction, paper_inequality_mentions_3_years × news_inequality_mentions_3_years. However, this may not be fully accurate, because some feature combinations could be quite rare. As a result, the usefulness of second-order interactions may depend heavily on the modeling approach and the amount of regularization."}, {"id": "student-41", "name": "phd_contributor_c5rzh", "x": 0.4040716471427787, "y": 0.5560546957216289, "degree": 19, "words": 102, "explanation": "First, when a paper belongs to the social sciences, the effect of recent academic attention to inequality (paper_inequality_mentions_3_years) should become stronger, since social science disciplines are more responsive to ongoing scholarly debates about inequality. Similarly, the interaction between social_science and news_inequality_mentions_3_years should be positive because social science research often responds to issues that receive increased public and media attention. When inequality becomes a prominent topic in the news, scholars in social science fields are more likely to study and publish work on related topics such as racial inequality. Finally, the interaction between the proportion of Black authors and the authors_race_diversity_score is expected"}, {"id": "student-42", "name": "phd_contributor_iuy3c", "x": 0.5667433997538048, "y": 0.3042281597598794, "degree": 0, "words": 244, "explanation": "I'm less certain here, but I thought publication lag would be incredibly important merely because of the utilitarian aspect of research. If we can't get published, we can't get jobs / tenure. Therefore it is smart to publish on something that you KNOW can probably get published, based on current trends. (I also don't believe the literature on diversity is anywhere near saturated, so in this causal model I don't take into account a backward slide because there are \"too many\" diversity pubs.) That said, I may be too bullish since the recent administration is negative on diversity; I'm influenced again here by local stories in my network, where researchers are pursuing diversity irrespective of the current administration's preferences. I interacted it with black and female -- the personal characteristics I identified as main effects. I think just because people are publishing on diversity doesn't make just anyone start publishing on it -- it is a pretty personal topic, either to oneself or one's beliefs, so I think it would interact especially with one's own identity. I also interacted the two time trends together. I don't think they are fully independent, but I believe that news would impact pubs and moderate (inflate) its effect. I noted all of these as positive interactions. (Interestingly - I am meta-noticing right now that what came easiest to mind for me were positive main effects and positive interactions; I wonder if that is just the way minds work!)"}, {"id": "student-43", "name": "phd_contributor_upzfq", "x": 0.26829600078759824, "y": 0.26882555269863717, "degree": 0, "words": 53, "explanation": "I feel like people from these race alone have less of an effect on racial inequality prediction, but these population in social science field might be a much stronger predictor. I believe white people are less interested in racial inequality research whereas the other two groups, black and asian might be more interested."}, {"id": "student-44", "name": "phd_contributor_7nisc", "x": 0.10268586593635536, "y": 0.33438934328836284, "degree": 0, "words": 130, "explanation": "I believe that having diversity in general is not sufficient, because diversity alone does not necessarily mean representation of the groups most affected by racial inequality. For example, a department could include White and Asian (typically engineering) scholars and still be considered diverse. However, I have the feeling that most social science departments that conduct research on racial inequality are more likely to include Black and Hispanic scholars as well. Additionally, diversity may exist in some laboratories or departments, but they might be working in completely different fields. For example, diversity could be present in natural science departments where researchers often come from a variety of ethnic backgrounds. Therefore, when studying research on racial inequality, it is important to control for whether the diversity is specifically within social science fields."}, {"id": "student-45", "name": "phd_contributor_41mim", "x": 0.6833708684965304, "y": 0.41660712379994086, "degree": 0, "words": 79, "explanation": "The three features chosen were the features I thought were most important to begin with. These are all the possible two-way interactions between them. Regarding the first two, one would imagine that the interactions between these two categorical features would be nonzero, as the effect is not likely to be strictly linear. Regarding the third, one could imagine that in line with the idea of intersectionality, black women would be more likely to consider performing research on racial inequality."}, {"id": "student-46", "name": "phd_contributor_8fcno", "x": 0.3915402758755835, "y": 0.797617403586406, "degree": 0, "words": 54, "explanation": "I have a similar thinking process as to before: I expect that much of the work in racial inequity is published in social sciences and that the intersection of particular author groups -- that may have more firsthand experience being a minority race -- and the social sciences domain to have a strong correlation."}, {"id": "student-47", "name": "phd_contributor_9b8k7", "x": 0.184691578964721, "y": 0.3517648972884206, "degree": 0, "words": 70, "explanation": "Black scholars opt more into social science and they are the most likely to study racial inequality because of personal experiences (or perceived biases). This bias can be reinforced when the disciplinary environment already treats inequality as a central topic (as it happens inside the social science discipline). When academic discourse on inequality is popular, these biases can get amplified making these scholars especially likely to engage with the topic."}, {"id": "student-48", "name": "phd_contributor_9pm5a", "x": 0.45856249825813983, "y": 0.629751953557993, "degree": 4, "words": 59, "explanation": "For social science and black authors, both of them can predict that a paper is likely discussing racial inequality; however, if both appear simultaneously, it will strengthen this probability. As for inequality phenomena, they are in themselves a very strong indicator and almost certainly appear in social science papers, so the interaction term will lead to a negative sign."}, {"id": "student-49", "name": "phd_contributor_2rhpt", "x": 0.42530216515501595, "y": 0.34716933507399766, "degree": 1, "words": 331, "explanation": "The way I chose to think about it, social science and Black is a positive interaction because they feed into each other. A Black researcher brings a perspective shaped by lived experience. They have grown up with some understanding of what racial inequality actually feels like. But that alone does not guarantee they will write about it. It matters whether their field makes space for those questions. Social science does. There is a whole community there already talking about race, journals that publish it, conferences where it is taken seriously. So when you put those two things together, someone who has reason to care and a field that says this is valid work, it pushes things forward in a way that neither would alone. Asian and White I chose as negative, but for a different reason. If you look at who is doing research, it is mostly Asian and White scholars. That is just the reality. So when you see a paper with those two groups, you are looking at the default. It is what most papers look like. And that default does not nudge a paper toward talking about racial inequality. If anything, papers that really dig into race tend to include authors from groups with a more direct historical connection to those questions in this country. So having only Asian and White authors signals that race probably is not the main event. And natural science and Hispanic I also chose as negative. Natural science just is not set up for questions about racial inequality. That is not what the journals want, not what gets funded, not what counts as a discovery in those fields. So even if a Hispanic scholar cares deeply about these issues, maybe they came to science because they love it but they still carry all that with them, the field itself does not encourage them to go there. If anything, it pushes the other way. So that combination does not amplify anything. It mutes it."}, {"id": "student-50", "name": "phd_contributor_z9ezk", "x": 0.30132042704696693, "y": 0.27744685390687895, "degree": 0, "words": 98, "explanation": "Public reports and discussion of racial inequality draw the attention of scholars to the issue (IV). Those studies or even special issues are more likely to be published in social science journals (positive M1). In a country with higher racial diversity (e.g., the US compared to Japan), scholars are more likely to collect first-hand data and observation to conduct studies (positive M2). Racial minorities, such as black scholars, are more likely to collect first-hand data and observation to conduct studies as it is easier to gain trust from target sample groups from the same racial group (positive M3)."}, {"id": "student-51", "name": "phd_contributor_z2j87", "x": 0.47343073264790475, "y": 0.4731077716042056, "degree": 10, "words": 148, "explanation": "The interaction between social_science and black is ranked first because Black researchers working in social science disciplines face racial inequality most directly in their academic environment, making the combination especially predictive. A Black sociologist, for example, is far more likely to study racial inequality than either a Black physicist or a white sociologist alone would suggest. The interaction between black and news_inequality_mentions_3_years captures a temporal amplification effect: when media coverage of racial inequality rises, Black researchers are particularly responsive to the heightened public discourse, channeling it into their academic work. The interaction between social_science and news_inequality_mentions_3_years reflects the fact that social scientists are the most responsive academic group to public discourse shifts -- when news highlights inequality, social science journals see the largest increase in related publications. All three interactions are positive because the paired features reinforce rather than substitute for each other in predicting racial inequality discussion."}, {"id": "student-52", "name": "phd_contributor_872ey", "x": 0.24747535028628104, "y": 0.5621374128546136, "degree": 12, "words": 122, "explanation": "Black people are more likely to suffer from racial inequality. However, this factor along may not be enough to conclude that the topic of the paper is racial inequality. Since social science concerns racial inequality more, a paper in social science with mostly black authors may imply a higher chance of racial inequality being the paper's topic. As research on racial inequality usually involves survey and lots of efforts, large number of black co-authors may imply higher chance of racial inequality being the paper's topic. Higher paper_inequality_mentions_3_years means that the topic of inequality in general, which subsumes racial inequality, is trendy. Under such circumstance, the mutual interest of an author list comprised of mostly black authors would more likely be racial inequality."}, {"id": "student-53", "name": "phd_contributor_7trlj", "x": 0.4591049930169328, "y": 0.43008223921202404, "degree": 7, "words": 188, "explanation": "Black researchers would be more likely to focus on race inequality. During periods of high media coverage of inequality, their motivation to publish on racial inequality would increase, go beyond what either variable predicts alone. This is the most important interaction because it puts two separate chains (e.g., author race and news coverage) together and create the strong combined effect on the outcome. A team with higher in Black and female representation creates a intersecting disadvantaged identities and produce stronger sensitivity to structural inequality than either dimension alone. This is the second most important interaction because both variables share the same mediator (publishing in a social science journal) and additionally being black has a direct path to the outcome. During periods of high news coverage of inequality, female authors, regardless of their race, are might be more motivated to pick social science journals. High public coverage would boost the effect of female authorship through the social science mediator, thus, increase the probability of the paper being about racial inequality. This interaction is weaker than the first two it operates through only one mechanism (social science as the mediator)"}, {"id": "student-54", "name": "phd_contributor_1nw3h", "x": 0.16880134026490107, "y": 0.42586652545213066, "degree": 1, "words": 128, "explanation": "In a more racially diverse country, racially underpriviledged group--black and hispanic in this case-- are more likely to have experienced issues associated with racial inequality. Therefore, a higher country race diversity score would imply that the racially disadvantaged group has a higher chance of conducting research on racial inequalities, reinforcing the races' influence on predicting the content of the paper. Conversely, if more authors are from the underpriviledged group, the effect of living in a more diverse country is pronouced. Similarly, in a more racially diverse country, priviledged group--white in this case--would witness more issues associated with racial inequality, leading them to consider more working on this problem. Conversely, if more authors are from the priviledged group, the effect of living in a more diverse country is pronouced."}, {"id": "student-55", "name": "phd_contributor_0r0es", "x": 0.48483986039657667, "y": 0.5135654148383768, "degree": 7, "words": 141, "explanation": "The selected interaction effects reflect reinforcing relationships between semantic signals, author composition, disciplinary context, and temporal trends in shaping discussions of racial inequality. First, the interaction between black and social_science is positive because social science disciplines are more oriented toward studying structural inequality, and the presence of Black-related content further amplifies the salience of racial inequality topics within these fields. Second, the interaction between black and authors_race_diversity_score is positive, as more racially diverse research teams are more likely to recognize and emphasize racial inequality when engaging with topics related to Black populations, reflecting complementary effects of semantic relevance and perspective diversity. Finally, the interaction between social_science and paper_inequality_mentions_3_years is positive because social science fields are more responsive to shifts in academic discourse; when inequality becomes more prominent in recent literature, these disciplines are more likely to adopt and intensify this trend."}, {"id": "student-56", "name": "phd_contributor_ly6qj", "x": 0.27174583676696734, "y": 0.6189188444405266, "degree": 10, "words": 88, "explanation": "If social science papers have a Black author, I assume they will be about racial inequality, more than just \"social_science\" or \"black\" alone. As I mentioned previously, most papers on inequality are on gender inequality, so specifying a Black author along with \"paper_inequality_mentions_3_years\" should help narrow down the provided articles to those that are actually relevant. For \"news_ineqaulity_mentions_3_years\" and black authors, researchers are also more likely to write about racial inequality if it appears often in the media, and they feel backed up by the current political environment."}, {"id": "student-57", "name": "phd_contributor_drr4r", "x": 0.08, "y": 0.49846535385958024, "degree": 0, "words": 67, "explanation": "racial inequality is a much more important and popularly discussed theme in social science than natural science or engineering; black female, in my observation in life and academic interactions, are the most likely to highlight racial inequality aspects of various topics; on the other hand, racial inequality and inequality in general, are topics that are much further away from the typical pursuit of engineering and technology disciplines."}, {"id": "student-58", "name": "phd_contributor_u3rga", "x": 0.30462917130025374, "y": 0.705761662569811, "degree": 1, "words": 47, "explanation": "I expect large social science papers to have gathered the most authors because of racial inequality mentions. I expect females in social science settings to be particularly interested in racial inequality mentions. I expect large natural science papers to be focused more on large, complex natural phenomena."}, {"id": "student-59", "name": "phd_contributor_5cv1y", "x": 0.32279877221481773, "y": 0.5007478370145746, "degree": 12, "words": 120, "explanation": "For the second-order interaction of social_science-black, I believe that most of the studies on racial inequality are centered on the discrimination of black people in regions where white people are the majority; therefore, racial inequality benefits white people and harms black people, and therefore, is a topic that is highly influential for most black people who study social science. Based on this, I expect that black authors studying in the social sciences are more likely to study this topic. The inverse logic applies to papers with white authors. For the same reason as the first point, papers by authors with a lower diversity_score (favoring a higher fraction of black authors) may be more likely to be focused on racial inequality."}], "links": [{"source": "student-0", "target": "student-16", "similarity": 0.83}, {"source": "student-0", "target": "student-21", "similarity": 0.7982}, {"source": "student-0", "target": "student-37", "similarity": 0.7804}, {"source": "student-6", "target": "student-11", "similarity": 0.7997}, {"source": "student-6", "target": "student-16", "similarity": 0.7768}, {"source": "student-6", "target": "student-17", "similarity": 0.8115}, {"source": "student-6", "target": "student-21", "similarity": 0.7878}, {"source": "student-6", "target": "student-23", "similarity": 0.7998}, {"source": "student-6", "target": "student-37", "similarity": 0.8116}, {"source": "student-6", "target": "student-41", "similarity": 0.8035}, {"source": "student-6", "target": "student-52", "similarity": 0.845}, {"source": "student-6", "target": "student-56", "similarity": 0.8205}, {"source": "student-6", "target": "student-59", "similarity": 0.7759}, {"source": "student-9", "target": "student-28", "similarity": 0.783}, {"source": "student-9", "target": "student-35", "similarity": 0.8067}, {"source": "student-9", "target": "student-37", "similarity": 0.8184}, {"source": "student-9", "target": "student-41", "similarity": 0.799}, {"source": "student-9", "target": "student-53", "similarity": 0.7734}, {"source": "student-11", "target": "student-17", "similarity": 0.7905}, {"source": "student-11", "target": "student-22", "similarity": 0.7756}, {"source": "student-11", "target": "student-30", "similarity": 0.7932}, {"source": "student-11", "target": "student-35", "similarity": 0.7838}, {"source": "student-11", "target": "student-37", "similarity": 0.7827}, {"source": "student-11", "target": "student-41", "similarity": 0.7741}, {"source": "student-11", "target": "student-48", "similarity": 0.7785}, {"source": "student-11", "target": "student-52", "similarity": 0.7735}, {"source": "student-11", "target": "student-59", "similarity": 0.8129}, {"source": "student-12", "target": "student-17", "similarity": 0.8296}, {"source": "student-12", "target": "student-35", "similarity": 0.8201}, {"source": "student-12", "target": "student-38", "similarity": 0.7921}, {"source": "student-12", "target": "student-41", "similarity": 0.7773}, {"source": "student-12", "target": "student-51", "similarity": 0.7738}, {"source": "student-12", "target": "student-55", "similarity": 0.7835}, {"source": "student-14", "target": "student-35", "similarity": 0.7923}, {"source": "student-14", "target": "student-38", "similarity": 0.8431}, {"source": "student-14", "target": "student-49", "similarity": 0.7782}, {"source": "student-14", "target": "student-51", "similarity": 0.8171}, {"source": "student-14", "target": "student-53", "similarity": 0.7994}, {"source": "student-16", "target": "student-17", "similarity": 0.7849}, {"source": "student-16", "target": "student-21", "similarity": 0.8018}, {"source": "student-16", "target": "student-29", "similarity": 0.8187}, {"source": "student-16", "target": "student-37", "similarity": 0.7815}, {"source": "student-16", "target": "student-52", "similarity": 0.8131}, {"source": "student-16", "target": "student-54", "similarity": 0.774}, {"source": "student-17", "target": "student-21", "similarity": 0.8398}, {"source": "student-17", "target": "student-23", "similarity": 0.8056}, {"source": "student-17", "target": "student-26", "similarity": 0.7852}, {"source": "student-17", "target": "student-29", "similarity": 0.8003}, {"source": "student-17", "target": "student-30", "similarity": 0.7801}, {"source": "student-17", "target": "student-31", "similarity": 0.7865}, {"source": "student-17", "target": "student-34", "similarity": 0.784}, {"source": "student-17", "target": "student-35", "similarity": 0.8162}, {"source": "student-17", "target": "student-36", "similarity": 0.7795}, {"source": "student-17", "target": "student-37", "similarity": 0.7856}, {"source": "student-17", "target": "student-38", "similarity": 0.8568}, {"source": "student-17", "target": "student-41", "similarity": 0.8479}, {"source": "student-17", "target": "student-48", "similarity": 0.805}, {"source": "student-17", "target": "student-51", "similarity": 0.8052}, {"source": "student-17", "target": "student-52", "similarity": 0.8533}, {"source": "student-17", "target": "student-55", "similarity": 0.8181}, {"source": "student-17", "target": "student-56", "similarity": 0.8677}, {"source": "student-17", "target": "student-59", "similarity": 0.8282}, {"source": "student-21", "target": "student-23", "similarity": 0.8264}, {"source": "student-21", "target": "student-26", "similarity": 0.7864}, {"source": "student-21", "target": "student-28", "similarity": 0.8046}, {"source": "student-21", "target": "student-36", "similarity": 0.7885}, {"source": "student-21", "target": "student-37", "similarity": 0.8065}, {"source": "student-21", "target": "student-38", "similarity": 0.8204}, {"source": "student-21", "target": "student-41", "similarity": 0.8437}, {"source": "student-21", "target": "student-52", "similarity": 0.8234}, {"source": "student-21", "target": "student-56", "similarity": 0.8187}, {"source": "student-21", "target": "student-58", "similarity": 0.7945}, {"source": "student-21", "target": "student-59", "similarity": 0.7947}, {"source": "student-22", "target": "student-23", "similarity": 0.8263}, {"source": "student-22", "target": "student-36", "similarity": 0.7953}, {"source": "student-22", "target": "student-52", "similarity": 0.8087}, {"source": "student-22", "target": "student-56", "similarity": 0.78}, {"source": "student-23", "target": "student-26", "similarity": 0.8038}, {"source": "student-23", "target": "student-36", "similarity": 0.8775}, {"source": "student-23", "target": "student-41", "similarity": 0.7924}, {"source": "student-23", "target": "student-52", "similarity": 0.8464}, {"source": "student-23", "target": "student-56", "similarity": 0.8409}, {"source": "student-26", "target": "student-41", "similarity": 0.8158}, {"source": "student-28", "target": "student-37", "similarity": 0.7987}, {"source": "student-28", "target": "student-41", "similarity": 0.8052}, {"source": "student-29", "target": "student-52", "similarity": 0.8138}, {"source": "student-29", "target": "student-59", "similarity": 0.8009}, {"source": "student-30", "target": "student-35", "similarity": 0.8143}, {"source": "student-30", "target": "student-38", "similarity": 0.775}, {"source": "student-30", "target": "student-41", "similarity": 0.798}, {"source": "student-30", "target": "student-59", "similarity": 0.8185}, {"source": "student-34", "target": "student-35", "similarity": 0.7956}, {"source": "student-34", "target": "student-38", "similarity": 0.807}, {"source": "student-34", "target": "student-48", "similarity": 0.7916}, {"source": "student-34", "target": "student-51", "similarity": 0.774}, {"source": "student-34", "target": "student-55", "similarity": 0.7833}, {"source": "student-35", "target": "student-37", "similarity": 0.7797}, {"source": "student-35", "target": "student-38", "similarity": 0.8616}, {"source": "student-35", "target": "student-41", "similarity": 0.8512}, {"source": "student-35", "target": "student-51", "similarity": 0.8302}, {"source": "student-35", "target": "student-53", "similarity": 0.8009}, {"source": "student-35", "target": "student-55", "similarity": 0.8705}, {"source": "student-35", "target": "student-59", "similarity": 0.7825}, {"source": "student-36", "target": "student-52", "similarity": 0.7946}, {"source": "student-36", "target": "student-56", "similarity": 0.8181}, {"source": "student-37", "target": "student-38", "similarity": 0.7871}, {"source": "student-37", "target": "student-41", "similarity": 0.8148}, {"source": "student-37", "target": "student-52", "similarity": 0.7864}, {"source": "student-37", "target": "student-53", "similarity": 0.7862}, {"source": "student-38", "target": "student-41", "similarity": 0.8742}, {"source": "student-38", "target": "student-51", "similarity": 0.8764}, {"source": "student-38", "target": "student-53", "similarity": 0.8272}, {"source": "student-38", "target": "student-55", "similarity": 0.8571}, {"source": "student-38", "target": "student-56", "similarity": 0.7798}, {"source": "student-38", "target": "student-59", "similarity": 0.8052}, {"source": "student-41", "target": "student-48", "similarity": 0.7747}, {"source": "student-41", "target": "student-51", "similarity": 0.8333}, {"source": "student-41", "target": "student-53", "similarity": 0.7938}, {"source": "student-41", "target": "student-55", "similarity": 0.8291}, {"source": "student-41", "target": "student-56", "similarity": 0.7934}, {"source": "student-41", "target": "student-59", "similarity": 0.778}, {"source": "student-51", "target": "student-53", "similarity": 0.8095}, {"source": "student-51", "target": "student-55", "similarity": 0.8459}, {"source": "student-51", "target": "student-59", "similarity": 0.7805}, {"source": "student-52", "target": "student-56", "similarity": 0.8586}, {"source": "student-52", "target": "student-59", "similarity": 0.8213}, {"source": "student-56", "target": "student-59", "similarity": 0.7899}]}, {"id": "senior", "title": "Senior Scientists (n=13)", "color": "#F4A261", "nodes": [{"id": "senior-0", "name": "senior_contributor_zi680", "x": 0.31650019372875393, "y": 0.5466653148904193, "degree": 2, "words": 129, "explanation": "I expect social_science × news_inequality_mentions_3_years to be positive because social science is already geared toward inequality topics, so when inequality is more salient in the news, it is more likely to translate into papers that explicitly discuss racial inequality. I also expect social_science × female to be positive, assuming that women are somewhat more likely to work on social issues and that the social sciences make it easier and more legitimate to publish that kind of work, so the gender difference should be stronger there than in other fields. Finally, I expect white × news_inequality_mentions_3_years to be positive if news salience pulls more mainstream (and often white) researchers into the topic, increasing the likelihood that their papers address racial inequality when it feels more urgent in the broader discourse."}, {"id": "senior-1", "name": "senior_contributor_tjek9", "x": 0.3117088262764618, "y": 0.2800574697285107, "degree": 2, "words": 99, "explanation": "I think non-white people are more likely to publish on racial inequality (because it is self-relevant), but that this effect is more pronounced within the social sciences (because the counterforces in other fields, i.e., lack of field-relevance, would be too strong to allow the self-relevance to change behavior). I predict that the public discourse which leads to increased 3-year mentions in news and papers to predict more publishing on racial inequality, but that this effect is more pronounced within the social sciences, where racial inequality is relevant enough to those disciplines for public/field-level discourse to shift what people submit."}, {"id": "senior-2", "name": "senior_contributor_mkvct", "x": 0.5930240590688126, "y": 0.3108093937190511, "degree": 0, "words": 102, "explanation": "multiauthor papers with mostly black authors are more likely to discuss racial inequality compared to multiauthor papers with lower % of black authors or single black author papers. Ditto for hispanics - the rationale in each case is that such papers are often position pieces targeting specific issues. The matter of racial inequality may also be more pronounced for multi-author (vs. single author) social science papers, though I imagine this is a non-linear relationship, as consortia papers (and papers with 7+ co-authors) would be a completely separate category, where other ideas apply (more aligned with the mission of corresponding and senior authors)."}, {"id": "senior-3", "name": "senior_contributor_jakh3", "x": 0.10164978709884874, "y": 0.2058546235565148, "degree": 0, "words": 101, "explanation": "This is all about self selection and exposure. In the social sciences, it just so happens that black and hispanic graduate students tend to gravitate towards exploring questions of racial inequality. Therefore, their identity is the most important factor in determining whether someone will publish in that area. In addition, there is a tendency to exclude white authors from this conversation (unless they are women who study gender inequality.) So, because black and hispanic students are more likely to gravitate to this area, they are more likely to publish. Females are also likely, but only if they are black or hispanic."}, {"id": "senior-4", "name": "senior_contributor_unrjy", "x": 0.08, "y": 0.41753592561709385, "degree": 0, "words": 54, "explanation": "Social science, black, and hispanic/other are most likely to contain authors that would be motivated to study racial inequality either due to more awareness of inequality or due to stronger motivation to frame topics around this language. An overlap of two of these groups would create a strong positive interaction (social science, female, black)."}, {"id": "senior-5", "name": "senior_contributor_ogh5x", "x": 0.9199999999999999, "y": 0.9199999999999999, "degree": 0, "words": 19, "explanation": "I don't really have predictions about interactions. But the survey forced me to make choices so I made some."}, {"id": "senior-6", "name": "senior_contributor_ecdev", "x": 0.1881779552725168, "y": 0.3181746080445043, "degree": 1, "words": 40, "explanation": "As with gender, the social sciences publish on racial inequality more than other disciplines. Consequently, being black, author diversity, and paper mentions likely have little relation to racial inequality mentions in STEM fields, but much stronger relations in social science."}, {"id": "senior-7", "name": "senior_contributor_mxspa", "x": 0.4662571199158748, "y": 0.5853946673518376, "degree": 1, "words": 168, "explanation": "I believe all three interactions are expected to take a positive sign, such that each pair of features reinforces the other's influence on whether a paper discusses racial inequality. In the case of the social science × black author share and social science × authors' race diversity score, the positive sign reflects the conditional logic in my earlier reasoning: own-group research effects and diverse collaborative networks only predict occurrence of racial inequality research within social science where receptive journals, relevant funding, established scholarly communities support it. Outside social science, Id expect higher black author share or team diversity to add little predictive power. For news × paper inequality mentions, the positive sign follows from momentum: greater news coverage motivates researchers while a literature already saturated with inequality discourse may lower publication barriers. When both conditions are present simultaneously, they may have compounding effects. Keep in mind that I was forced by the survey to include a third interaction. If not, I’d have only listed the first two interactions."}, {"id": "senior-8", "name": "senior_contributor_h1ror", "x": 0.15701217284041397, "y": 0.5066167061350725, "degree": 0, "words": 44, "explanation": "I expect the interaction between author demographics and discipline to matter. Thus, the likelihood of black (or female) predicting that the paper will discuss racial inequality will increase if the paper is in social sciences, and decrease if the discipline is the natural sciences."}, {"id": "senior-9", "name": "senior_contributor_uhvrz", "x": 0.3570503925729779, "y": 0.3874430108929429, "degree": 1, "words": 98, "explanation": "As with gender, I think the combination of field relevance and personal relevance will have an interactive effect causing black academics in the social science to be more likely than their counterparts (i.e., non-black, non-social sciences) to produce papers related to racial inequality. Similarly, I think the notion of me-search will mean that mentions of inequality in the news will make the topic more salient for these academics. Finally, the tendencies of trends in a literature will lead to a rapid initial upsurge in inequality papers to start followed by a tapering off as the field becomes satuated."}, {"id": "senior-10", "name": "senior_contributor_5cvcm", "x": 0.1986405918070267, "y": 0.6646781311871518, "degree": 1, "words": 88, "explanation": "social science x paper_inequality_mentions_3_years: The positive effect of this interaction should be likely as the advancement of scientific knowledge is often shaped by paradigms that guide which topics are seen as important and legitimate (Kuhn, 1997). In addition, higher levels of prior inequality-related research may signal greater funding availability for these topics, which can further encourage subsequent work. social science x black: The logic here is simply the combination of two positive effects. social science x female: The logic here is simply the combination of two positive effects."}, {"id": "senior-11", "name": "senior_contributor_8pxf3", "x": 0.460142651517096, "y": 0.2566335504160239, "degree": 0, "words": 200, "explanation": "(1) Mentions of race in the news are positively associated with mentions of race in papers (because they increase both authors' interest and potentially data availability). This effect will be more pronounced for authors in the social sciences, who are already more focused on topics that have to do with race, rather than for those in the natural sciences and engineering - although they main increase their mentions of race as well (2) Mentions of race in papers are positively associated with mentions of race in papers (because they increase both authors' interest and potentially data availability). This effect will be more pronounced for authors in the social sciences, who are already more focused on topics that have to do with race, rather than for those in the natural sciences and engineering - although they main increase their mentions of race as well (3) Issues of race will be more salient for authors in countries where there is more diversity, which should increase mentions of race in their research. However, this effect should be less strong for white authors, who may not experience issues of race in the same way as non-white authors (hence decreasing their interest in the topic)"}, {"id": "senior-12", "name": "senior_contributor_wylyg", "x": 0.4388475492796699, "y": 0.08, "degree": 0, "words": 94, "explanation": "It's difficult to know! I think that the growing salience of race issues will be most strongly experienced in areas that are primed to recognize them. That includes countries where diversity increases the salience of racial issues, and fields (social science) where they are more relevant. Even as race takes on a growing importance in society, it will remain of less interest to other fields and in countries where it is seen as less relevant. I also suspect that within more diverse countries it is black academics who are more drawn to these questions."}], "links": [{"source": "senior-0", "target": "senior-7", "similarity": 0.7845}, {"source": "senior-0", "target": "senior-10", "similarity": 0.7969}, {"source": "senior-1", "target": "senior-6", "similarity": 0.7739}, {"source": "senior-1", "target": "senior-9", "similarity": 0.8261}]}, {"id": "GenAI", "title": "GenAI (n=25)", "color": "#66BB6A", "nodes": [{"id": "GenAI-0", "name": "GPT_5.3_instant", "x": 0.7192675849026795, "y": 0.3424200116463223, "degree": 24, "words": 212, "explanation": "I expect the most important second-order interactions to center on social_science because disciplinary context likely determines whether broader social attention and team composition actually translate into explicitly naming racial inequality in a paper’s title or abstract. My first choice, social_science × paper_inequality_mentions_3_years, is positive because rising inequality attention in academia should have a stronger effect in fields already oriented toward social problems, where scholars are more likely to absorb and reproduce inequality-related framing. My second choice, black × social_science, is also positive because I assume the influence of author positionality is not uniform across all disciplines: a higher estimated share of Black authors is more likely to shape topic selection in social science settings, where lived experience, identity-linked research agendas, and critical discussions of inequality are more institutionally recognized and publishable. My third choice, authors_race_diversity_score × social_science, is likewise positive because racially diverse teams may have broader collective awareness of inequality, but that awareness is most likely to become an explicit research output when the disciplinary environment treats racial inequality as a legitimate object of analysis. Overall, my reasoning is that social science acts as an enabling context that amplifies both macro-level discourse trends and micro-level team composition effects, making these interactions especially important for predicting whether racial inequality is explicitly discussed."}, {"id": "GenAI-1", "name": "GPT_5.2_instant", "x": 0.3863533300340626, "y": 0.08, "degree": 22, "words": 206, "explanation": "I expect disciplinary context to condition the effects of both discourse-level trends and author composition, which is why all three top interactions involve social_science. First, the positive interaction between social_science and prior academic inequality trends reflects a field-amplification mechanism: when inequality becomes more prominent in academic discourse overall, social science disciplines—whose core theories and methods are designed to analyze stratification and injustice—are especially likely to incorporate and extend that trend. Thus, the positive time-trend effect should be stronger inside social sciences than in other fields. Second, the positive interaction between Black author share and social_science reflects a contextual activation assumption: standpoint-related motivations or sensitivities are more likely to translate into explicit racial inequality research when scholars are embedded in disciplines where race is already a legitimate and central analytic category. In technical or natural science fields, such motivations may have fewer institutional channels for expression. Third, the positive interaction between news inequality trends and social_science reflects agenda-setting dynamics: while public discourse may influence academia broadly, social sciences are particularly responsive to societal events, normative debates, and policy-relevant issues. In sum, I assume that social science disciplines function as an enabling environment that amplifies both temporal discourse shifts and author-based standpoint effects, leading to positively signed interactions."}, {"id": "GenAI-2", "name": "Gemini_3_fast", "x": 0.8656365776829652, "y": 0.6172665311213771, "degree": 24, "words": 165, "explanation": "My selection of second-order interactions is rooted in the theory of contextual amplification and intersectionality. I ranked the interaction between `social_science` and `paper_inequality_mentions_3_years` first because academic discourse does not exist in a vacuum; rather, the existing infrastructure of social science disciplines provides a fertile ground that amplifies broader academic trends, creating a compounding effect where general inequality mentions catalyze specific discussions of racial inequality. Similarly, the interaction between `engineering_and_technology` and `paper_inequality_mentions_3_years` represents a \"sociotechnical turn\" where the rising global tide of inequality discourse forces traditionally \"neutral\" fields to adopt keywords related to algorithmic and racial bias. Finally, the interaction between the `female` author share and `black` author share is based on the assumption that team composition is synergistic; I believe that the presence of diverse perspectives across both gender and race categories increases the probability of a paper addressing systemic disparities more than the sum of their individual parts, as these teams are theoretically more likely to employ an intersectional lens in their research design."}, {"id": "GenAI-3", "name": "Claude_sonnet4.6", "x": 0.22983686686443267, "y": 0.5527394115084449, "degree": 24, "words": 306, "explanation": "The three interactions I selected all reflect a common theoretical logic: that the predictors of racial inequality scholarship are not independent but are instead conditioned by one another through mechanisms of institutional context, identity salience, and agenda responsiveness. The most important interaction, black × social_science, rests on the assumption that positionality-driven research motivation requires institutional scaffolding to be converted into published academic output. A Black scholar's lived experience and personal motivation to study racial inequality is a necessary but not sufficient condition — it must be coupled with a disciplinary environment that provides the conceptual vocabulary, methodological toolkit, peer legitimacy, and receptive journal outlets to transform that motivation into keyword-containing publications. Social science provides precisely this scaffolding, while engineering or natural science largely does not, meaning the two variables amplify each other beyond their additive individual effects. The second interaction, news_inequality_mentions_3_years × social_science, reflects the assumption that academic disciplines vary substantially in their permeability to external social pressures. Social scientists operate with a professional norm of societal relevance and are embedded in institutional reward structures — grant agencies, journal editors, tenure committees — that are themselves responsive to public discourse. When media salience of racial inequality rises, these institutional transmission mechanisms selectively channel that pressure into social science research agendas far more than into natural science or engineering ones, producing a superadditive effect. The third interaction, black × news_inequality_mentions_3_years, captures a resonance mechanism rooted in identity-contingent agenda responsiveness: high-profile public events involving racial inequality — police violence, civil rights movements, legislative battles — are not equally salient to all scholars but are particularly motivating to those with direct personal and community stakes in the issue. Black scholars are more likely to experience such moments as urgent calls to produce relevant knowledge, amplifying their already-higher baseline propensity to study racial inequality during periods of heightened public attention."}, {"id": "GenAI-4", "name": "Grok4_fast", "x": 0.6969323012059443, "y": 0.10323464923913962, "degree": 24, "words": 257, "explanation": "Here is my response for Q Race.10: The three second-order interactions I ranked as most important for predicting racial inequality keyword mentions all revolve around the amplifying role of disciplinary context because social science fields have deeply institutionalized explicit racial analysis as a legitimate and often expected scholarly frame. The strongest interaction—social_science × black (+)—arises because the positive effect of higher Black author share on using racial inequality language is dramatically magnified within social sciences, where scholars from underrepresented racial groups receive stronger normative encouragement, access relevant networks, and face lower professional costs for centering race; outside social sciences the same demographic signal has much weaker impact. Ranked second is social_science × paper_inequality_mentions_3_years (+), reflecting that the recent academic climate of inequality discourse exerts far greater influence on individual papers when the paper is situated in a social science field whose journals, reviewers, and citation practices already reward alignment with prevailing inequality frames; in natural sciences or engineering the same lagged climate has limited traction. Third is social_science × news_inequality_mentions_3_years (+), as external media salience of inequality translates more readily into academic language within disciplines that are culturally permeable to broader social movements and public discourse. My assumptions rest on the belief that field-specific cultures act as powerful moderators: social sciences function as “hotbeds” where demographic, climatic, and external signals are translated into explicit racial inequality framing much more intensely than in harder sciences, producing large positive interaction effects while the main effects of the climate and author-demographic variables remain meaningful but secondary outside that disciplinary context."}, {"id": "GenAI-5", "name": "Grok4_expert", "x": 0.7083353332293768, "y": 0.23252488442900082, "degree": 24, "words": 258, "explanation": "The three most important second-order interactions for predicting racial-inequality mentions all revolve around social_science as the dominant moderator because academic disciplines function as powerful institutional gatekeepers that determine what topics are considered legitimate, fundable, and publishable. The strongest interaction, social_science × black (+), arises from standpoint epistemology and historical patterns of scholarly mobilization: higher estimated shares of Black authors strongly elevate the use of racial-inequality keywords (racial bias, discrimination, justice, etc.) but almost exclusively within social-science journals (sociology, political science, psychology, ethnic studies), where lived-experience perspectives are rewarded and central to the agenda; in natural-science, engineering, or technology outlets the same author composition produces negligible effects due to differing norms and incentive structures. Similarly, social_science × authors_race_diversity_score (+) is second-most important because racially mixed author teams—captured by Shannon entropy on inferred country-of-origin racial probabilities—introduce complementary epistemic lenses that surface issues of racial stratification, yet this diversity benefit materializes only inside social-science venues that actively value and disseminate identity-focused scholarship; outside those fields even diverse teams default to race-neutral framing. Finally, social_science × paper_inequality_mentions_3_years (+) ranks third because recent surges in overall academic inequality discourse generate strong path-dependent momentum (via citation networks, special issues, and funding), but this temporal amplification is confined to social-science disciplines that are far more responsive to scholarly fashion and societal signals than the more insulated natural-science or engineering fields. These interactions dominate because disciplinary boundaries act as the primary filter that either amplifies or nullifies the influence of author standpoint, team diversity, and cumulative academic climate on actual racial-inequality language in titles and abstracts."}, {"id": "GenAI-6", "name": "Mistral_balanced", "x": 0.5406837185689727, "y": 0.6060845979162045, "degree": 24, "words": 419, "explanation": "The selection and ranking of second-order interactions for predicting mentions of racial inequality in academic papers are grounded in theories of social identity, disciplinary norms, and the broader socio-political context that shapes scholarly work. The social_science × black interaction is considered the most important because it combines two of the strongest individual drivers of research focus: the disciplinary emphasis on social issues and the lived experiences or academic priorities of Black authors. Social science fields, by their nature, are designed to interrogate power structures, inequality, and marginalization, making them fertile ground for discussions of racial inequality. When Black scholars—who may have personal or professional stakes in racial justice—are part of these disciplines, the likelihood of addressing racial inequality is further amplified. This interaction reflects the idea that identity and disciplinary culture are not additive but multiplicative; the presence of Black authors in social science contexts creates a synergistic effect, as their perspectives and priorities align with the field's focus on societal inequities. The social_science × authors_race_diversity_score interaction is ranked second because it captures how diversity within a discipline already attuned to social issues can deepen and broaden the exploration of racial inequality. Diverse author teams bring varied experiences and viewpoints, which can enrich theoretical and empirical approaches to studying inequality. In social science disciplines, where methodological pluralism and critical perspectives are valued, diversity is not just a demographic feature but a catalyst for more nuanced and inclusive research agendas. This interaction assumes that diversity is most impactful when embedded within a disciplinary culture that actively encourages the study of inequality, thereby reinforcing the importance of both context and composition in shaping research outcomes. Finally, the news_inequality_mentions_3_years × black interaction is ranked third, reflecting the dynamic relationship between public discourse and academic research. When racial inequality is prominently discussed in the media, it signals a heightened societal awareness and urgency, which can motivate scholars—particularly those from marginalized groups—to engage with these issues in their work. For Black authors, whose experiences and academic interests may already be attuned to racial justice, a surge in public attention to inequality can provide both validation and impetus to contribute to the conversation. This interaction underscores the idea that research is not conducted in a vacuum; it is responsive to the socio-political environment, and the alignment of author identity with public discourse can create a powerful impetus for scholarly engagement with racial inequality. Together, these interactions highlight how disciplinary norms, author identity, and external context intersect to shape the content and focus of academic research."}, {"id": "GenAI-7", "name": "DeepSeek_expert", "x": 0.1203002312049653, "y": 0.573199235501244, "degree": 23, "words": 478, "explanation": "My selection of these three interactions is governed by a hierarchical, structural-to-proximal logic, beginning with the foundational gatekeeping role of discipline and then moving to the more nuanced internal dynamics of author teams. The most important interaction, social_science × black, captures what I see as the essential synergy between motivational capacity and institutional opportunity. My core assumption is that a scholar's propensity to study racial inequality is not a simple function of identity or disciplinary context alone, but of their conjunction. A Black scholar carries, on average, a heightened personal stake in understanding racial subordination, but this motivation requires a disciplinary home that legitimizes such inquiry as rigorous scholarship to be fully realized in published output. Social science provides precisely this scaffolding-its journals, peer networks, and theoretical canons offer a receptive structure that amplifies the expression of standpoint-driven motivation. In a natural science or engineering field, an equally motivated Black scholar faces a disciplinary environment where the topic is defined as outside the scope of proper inquiry, thus dampening the effect. The positive sign therefore reflects a multiplicative amplification: the whole is greater than the sum of its parts. The second-most important interaction, social_science × natural_science, operates at an even more fundamental epistemological level. Its negative sign directly encodes the mutual exclusivity of these two broad domains of knowledge. This is not a trivial statistical artifact but a substantive embodiment of what sociologists of science call \"boundary work\": the categorical separation between disciplines that study social facts and those that study natural facts. A paper's location in one domain completely rules out the other, and since these domains have diametrically opposed relationships to the topic of racial inequality, their interaction provides a powerful structural constraint on prediction. Without this interaction term, the model would miss the stark, non-linear reality that moving from one disciplinary world to the other is not a matter of degree but of kind. The third interaction, black × authors_race_diversity_score, shifts the analytical lens from the macro-structure of disciplines to the micro-dynamics of collaboration. My reasoning here draws on theories of intergroup contact and collective knowledge production. Team racial diversity alone can be a superficial aggregation without genuine integration of perspectives; a high share of Black authors alone might indicate a team that is relatively homogeneous in its racialized experience. Their positive interaction, however, signals a distinct collaborative configuration: a truly multiracial team where Black scholars are a substantial, non-tokenized presence. I assume that this specific compositional form creates a generative tension within the collaborative process, where the lived reality of racial difference is enacted among co-authors, making the topic of racial inequality not merely an abstract research interest but a salient aspect of the working relationship itself. This reflexive environment, I theorize, is uniquely productive of explicit scholarship on racial inequality, yielding an effect that exceeds the additive contributions of its two constituent features."}, {"id": "GenAI-8", "name": "Claude_opus4.7", "x": 0.1220952443557577, "y": 0.2756371709388641, "degree": 23, "words": 232, "explanation": "My three interactions share a common logic: the effect of any single driver of racial-inequality discourse is conditional on whether the structural opportunity to express that discourse exists, and disciplinary scope is the master conditioning variable. The strongest interaction, social_science × black, reflects my assumption that author standpoint cannot operate in a vacuum—a Black scholar's heightened motivation to study racial marginalization only converts into a keyword-bearing paper when situated in a field whose journals, vocabulary, and reviewers treat racial inequality as legitimate subject matter; in engineering or natural-science venues that same motivation has little outlet, so the two forces are multiplicative rather than merely additive, yielding a positive sign. The second interaction, social_science × paper_inequality_mentions_3_years, rests on the same conditionality applied to temporal salience: a rising tide of inequality attention across the literature can only lift papers in disciplines positioned to absorb it, so field-wide momentum and disciplinary fit reinforce one another positively, while the trend is largely inert in technical fields. The third, black × paper_inequality_mentions_3_years, captures a within-person amplification: when the broader field signals that inequality is timely, legitimate, and fundable, the latent standpoint motivation of Black authors is further activated and de-risked, so identity and temporal opportunity compound positively. The unifying assumption is one of complementarity—motivation, attention, and disciplinary opportunity are inputs that multiply rather than substitute, so each becomes most powerful precisely when the others are also present."}, {"id": "GenAI-9", "name": "Claude_opus4.7_adaptive", "x": 0.27327472539096753, "y": 0.2467443868326809, "degree": 24, "words": 358, "explanation": "All three interactions share one underlying logic: disciplinary membership is the gatekeeping condition that allows other forces to express themselves as racial-inequality discourse. I treat `social_science` not merely as an additive booster but as a moderating context — an enabling ecology with the vocabulary, theoretical traditions, journals, reviewers, and reward structures that make naming racial inequality both legitimate and publishable. Outside that ecology (e.g., in engineering or the natural sciences), the same impulses have no sanctioned outlet, so their slopes flatten toward zero. This is why every interaction I selected is positive and why each pairs `social_science` with a force whose effect I believe is latent until a field activates it. For the first and most important interaction, `social_science × paper_inequality_mentions_3_years` (+), my assumption is that the temporal \"salience wave\" of inequality attention does not lift all fields equally: when ambient scholarly attention to inequality rises (e.g., after 2013 and especially 2020), social scientists are positioned to ride that wave — reframing projects, launching new ones, and citing the moment — whereas a chemistry or mechanical-engineering paper is largely insulated from it, so the wave's predictive power is concentrated where the mandate exists. The third interaction, `social_science × news_inequality_mentions_3_years` (+), is the same mechanism operating one step upstream through the public sphere: media-driven salience translates into academic framing chiefly among scholars whose discipline treats public social problems as legitimate objects, so media climate matters far more for social-science output than for technical fields. The second interaction, `social_science × black` (+), reflects a standpoint-times-opportunity logic: a scholar's social position may generate motivation and lived urgency to study racial inequality, but motivation converts into a published, keyword-bearing paper only where the field affords the topic — so the standpoint effect of Black author share is amplified inside social science and muted where the discipline offers no path to publish such work. The governing assumption across all three is multiplicative gating rather than simple addition: temporal climate, public attention, and authorial standpoint are best understood as potentials whose realization is conditional on a permissive disciplinary environment, which is why the interaction terms carry real, positive explanatory weight beyond the main effects."}, {"id": "GenAI-10", "name": "Qwen_3.6Plus_thinking", "x": 0.08, "y": 0.38160906479390355, "degree": 24, "words": 260, "explanation": "These three interactions reflect synergistic mechanisms where structural positionality and discursive context jointly amplify the likelihood of racial inequality mentions. First, `social_science × black` (+) captures how standpoint epistemology operates most powerfully within disciplines that possess the theoretical infrastructure—critical race theory, stratification research, social psychology of prejudice—to translate lived experience into publishable scholarship; a Black scholar in engineering may face epistemic marginalization when centering race, whereas the same scholar in sociology benefits from field-level validation, creating a multiplicative rather than additive effect. Second, `social_science × paper_inequality_mentions_3_years` (+) reflects path dependence conditional on disciplinary legitimacy: recent inequality scholarship generates citation networks, special issues, and methodological toolkits that lower entry barriers, but this momentum primarily accelerates new work in fields where racial inequality is already a recognized object of inquiry, not in fields where it remains peripheral. Third, `authors_race_diversity_score × paper_inequality_mentions_3_years` (+) posits that racially diverse teams are uniquely positioned to leverage existing inequality discourse—through intersectional frameworks, cross-disciplinary translation (e.g., applying critical race concepts to algorithmic fairness), or community-engaged research questions—but only when the broader academic ecosystem provides accessible reference points; diversity without discursive scaffolding may yield innovation that remains unpublished or framed in non-keyword terms. All three interactions carry positive signs because they represent reinforcing loops: structural advantages (disciplinary fit, author standpoint, team composition) and contextual enablers (recent scholarship) compound rather than substitute for one another. Key assumptions include that race estimation via names/countries, while noisy, preserves rank-order variation; that disciplinary boundaries remain meaningful despite interdisciplinary growth; and that the post-2010s rise of racial justice discourse strengthens these interactions over time."}, {"id": "GenAI-11", "name": "Claude_opus4.8", "x": 0.21978607435535963, "y": 0.43764208088208423, "degree": 23, "words": 259, "explanation": "These interactions are important because the effect of any single predictor on racial-inequality discussion is rarely additive—each factor's influence is amplified or suppressed by the context in which it operates. The strongest interaction, social_science × black, reflects the idea that a Black author's standpoint motivation can only translate into published racial-inequality scholarship when the disciplinary environment provides the conceptual tools and legitimacy to do so; a Black researcher in social science finds both the means and the audience to pursue racial questions, whereas the same author in a natural science or engineering field faces structural constraints that mute that effect, so the two factors are complementary and the interaction is positive. The second interaction, social_science × paper_inequality_mentions_3_years, captures a similar conditional logic at the field-discourse level: a rising tide of inequality discussion in the broader literature is most consequential where the topic is already actionable, so social science fields convert favorable discursive opportunity into actual racial-inequality papers far more readily than fields where the topic remains peripheral, again yielding a positive sign. The third, black × authors_race_diversity_score, rests on the assumption that the presence of Black authors matters more when embedded in a racially heterogeneous team, because diverse teams create the deliberative friction and multiple vantage points that surface racial concerns, whereas a homogeneous team—even one with Black members—may lack the comparative perspective that makes racial dynamics salient; the two reinforce one another, producing a positive interaction. Across all three, the underlying assumption is one of complementarity: motivation, opportunity, and disciplinary legitimacy must co-occur for racial-inequality discourse to materialize."}, {"id": "GenAI-12", "name": "Claude_opus4.8_adaptive", "x": 0.21752708483238475, "y": 0.35625903107914786, "degree": 24, "words": 295, "explanation": "All three interactions are positive because each captures a gating-and-amplification logic in which a main effect can only express itself when an enabling condition is present—so the joint presence produces more than the sum of the parts. The most important, social_science × black, reflects my belief that the standpoint/topic-selection mechanism is conditional on disciplinary opportunity: a Black author's elevated propensity to study racial inequality can only translate into racial-inequality keywords if they work in a field whose concepts, methods, and journals permit such inquiry. A Black engineer or chemist faces an epistemic context with essentially no channel for racial-inequality scholarship, so the author-composition effect is suppressed outside the social sciences and strongly activated within them—hence a super-additive positive interaction, and the strongest of the three because it conjoins the two mechanisms (standpoint and discipline) I already ranked as central. The second, social_science × paper_inequality_mentions, rests on an agenda-receptivity assumption: rising attention to inequality in the prior literature raises the baseline propensity to publish on the topic, but that rising tide lifts boats mainly where the topic is admissible—social-science fields convert academic salience into actual racial-inequality papers far more efficiently than technical fields, where the same discourse environment leaves output largely unchanged, producing a positive interaction. The third, black × news_inequality_mentions, invokes moderated mobilization: public salience (e.g., post-Ferguson/BLM surges in news attention to race) does not move all scholars equally; authors with lived proximity to racial disadvantage are the most responsive to such moments, foregrounding race precisely when the public sphere makes it urgent, so the standpoint effect and the public-salience effect reinforce one another. I rank it third because both inputs are measured with more noise—name-based race inference and a broad, all-forms news-mentions index—which should attenuate the observable interaction relative to the discipline-anchored ones above."}, {"id": "GenAI-13", "name": "Mistral_thinking", "x": 0.4036209540341425, "y": 0.47740281001090784, "degree": 24, "words": 162, "explanation": "The most important interaction, social_science × news_inequality_mentions_3_years, reflects the idea that social science disciplines are uniquely responsive to societal discourse; when inequality is salient in the news, social scientists are more likely to produce research addressing these themes, amplifying the effect of both variables. The second interaction, social_science × black, assumes that Black scholars in social sciences—fields already focused on inequality—are especially likely to study racial inequality, creating a synergistic effect where the combination of discipline and author identity exceeds the sum of their individual contributions. The third interaction, black × news_inequality_mentions_3_years, posits that Black authors are more attuned to public conversations about racial issues and are thus more likely to respond academically when such topics gain prominence in the media. All interactions carry positive signs because each pair of factors is theorized to reinforce one another in increasing the likelihood of a paper discussing racial inequality, assuming that disciplinary norms, author identity, and temporal context are interdependent drivers of scholarly focus."}, {"id": "GenAI-14", "name": "Qwen_3.7Plus_thinking", "x": 0.4197308608600051, "y": 0.6234234797835174, "degree": 24, "words": 216, "explanation": "The selected second-order interactions highlight how disciplinary contexts and prior academic momentum synergize with author demographics to shape research on racial inequality. First, the positive interaction between `social_science` and the share of `black` authors is rooted in the assumption that while standpoint theory suggests Black scholars are intrinsically motivated to study racial disparities, the social sciences provide the necessary epistemological legitimacy, theoretical frameworks, and methodological tools to formally investigate these societal issues, thereby amplifying their impact compared to STEM fields where disciplinary norms may constrain such inquiries. Second, the positive interaction between `social_science` and `authors_race_diversity_score` reflects the assumption that while diverse teams generate a wider range of perspectives, social sciences are uniquely equipped to channel this cognitive and demographic diversity toward analyzing structural social problems like racial inequality, whereas diverse teams in other fields might direct their varied viewpoints toward technical or natural phenomena. Finally, the positive interaction between `paper_inequality_mentions_3_years` and `authors_race_diversity_score` is based on the premise of academic path dependence; a robust existing literature lowers the barrier to entry for researching inequality, and racially diverse teams, being highly attuned to these issues, are particularly well-positioned to recognize, engage with, and build upon this established scholarly infrastructure, creating a compounding effect where demographic diversity and academic momentum mutually reinforce the production of knowledge on racial inequality."}, {"id": "GenAI-15", "name": "GPT_5.5_thinking_standard", "x": 0.46203290915994705, "y": 0.37369723275275524, "degree": 24, "words": 195, "explanation": "I expect social_science × black to be the most important positive interaction because author identity and disciplinary context should reinforce one another: a higher share of Black authors may increase the likelihood that a paper addresses racial inequality, but this association should be especially strong in social science fields where race, discrimination, racial stratification, and justice are established objects of study. I expect social_science × paper_inequality_mentions_3_years to be the second-most important positive interaction because recent academic discourse about inequality should diffuse most strongly through fields that already have the conceptual tools and publication venues for inequality research; therefore, when inequality becomes more prominent in academia, social science papers should be especially likely to adopt racial inequality language. I expect black × news_inequality_mentions_3_years to be the third-most important positive interaction because public attention to inequality may activate or amplify research agendas among scholars whose work is closely connected to racialized experience, racial justice, or minority communities. In all three cases, the positive sign reflects a complementarity logic: the joint presence of disciplinary receptivity, author positionality, and external discourse salience should produce more than merely additive increases in the probability that a paper explicitly mentions racial inequality."}, {"id": "GenAI-16", "name": "GPT_5.5_thinking_extended", "x": 0.5069213061630214, "y": 0.28711900025371445, "degree": 24, "words": 205, "explanation": "I chose these interactions because I expect the effect of broader discourse and author identity to depend strongly on disciplinary context. The interaction between social_science and paper_inequality_mentions_3_years should be positive because academic attention to inequality is most likely to diffuse into new papers within fields that already treat inequality as a central theoretical and empirical object. In other words, when inequality becomes more common in recent academic discourse, social-science authors are especially likely to adopt those concepts, keywords, and problem framings in their own titles and abstracts. The interaction between social_science and black should also be positive because the relationship between Black authorship and racial-inequality mentions is likely strongest in fields where race, discrimination, racial justice, and institutional inequality are legitimate research topics; in more technical or natural-science fields, author standpoint may have less opportunity to shape the explicit framing of the paper. Finally, the interaction between social_science and news_inequality_mentions_3_years should be positive because public attention to inequality is more likely to influence disciplines that study social problems, institutions, politics, and collective behavior. Overall, these interactions assume that macro-level discourse and researcher standpoint do not operate uniformly across academia, but are amplified when disciplinary norms provide concepts, methods, and publication venues for discussing racial inequality."}, {"id": "GenAI-17", "name": "GPT_5.4_thinking_standard", "x": 0.6829568185581217, "y": 0.470069976395857, "degree": 24, "words": 247, "explanation": "The interactions I selected are all based on the idea that the effect of inequality salience and author positionality is not uniform across fields, but becomes stronger in disciplinary contexts where race and inequality are already seen as legitimate and central topics. I ranked social_science × paper_inequality_mentions_3_years first because I assume academic agenda diffusion works most powerfully where the receiving field has strong conceptual infrastructure for interpreting new work through the lens of stratification, discrimination, and justice; thus, when inequality discourse rises in prior scholarship, social science papers should be especially likely to convert that background signal into explicit mention of racial inequality, producing a positive interaction. I ranked black × social_science second because I assume positionality matters more when a field offers both normative permission and analytical vocabulary for naming racial hierarchy directly; in social science, a higher share of Black authors should therefore be especially strongly associated with racial-inequality discussion, again implying a positive sign. I ranked news_inequality_mentions_3_years × social_science third because public discourse should have its greatest research impact in fields that are more porous to social events, media debate, and political conflict; when inequality is more visible in the news, social scientists should be especially likely to treat it as a research problem and reflect that in titles and abstracts. Overall, these choices assume that social science acts as an amplifier: it strengthens the influence of both broader inequality salience and author-based sensitivity to race-related issues on whether papers explicitly discuss racial inequality."}, {"id": "GenAI-18", "name": "GPT_5.4_thinking_extended", "x": 0.6618225315221403, "y": 0.3603662495952597, "degree": 24, "words": 216, "explanation": "I believe the most important second-order interactions are the ones in which social_science amplifies the effects of broader discourse and author composition, because disciplinary context likely determines whether underlying concerns are translated into explicit racial-inequality language in a paper's title or abstract. I rank social_science × paper_inequality_mentions_3_years first and assign it a positive sign because recent inequality discourse in academia should be especially likely to diffuse into new work in social science, where scholars are more attentive to inequality as a core theoretical object and more likely to use that vocabulary explicitly. I rank social_science × black second and also positive because any tendency for teams with more Black authors to select race-salient topics or frame them through inequality concepts should be more visible in fields where such framing is institutionally legitimate and common. I rank social_science × news_inequality_mentions_3_years third and again positive because public discourse does not affect all fields equally: social scientists are more likely than researchers in many other domains to respond to current events, public controversies, and shifts in collective attention by incorporating racial inequality language into their scholarly framing. Across all three interactions, my core assumption is that social science acts as an enabling context that strengthens the conversion of external salience and team-level experience into explicit mentions of racial inequality."}, {"id": "GenAI-19", "name": "gemini_3.1_pro_standard", "x": 0.5765665467292809, "y": 0.9199999999999999, "degree": 21, "words": 187, "explanation": "My selections are grounded in the interplay between structural disciplinary boundaries and specific demographic or temporal catalysts. I ranked the interaction between the `social_science` and `black` features as the most important with a positive sign because it captures a powerful amplification effect: the social sciences provide the necessary theoretical and methodological venue for inequality discourse, while Black scholars—often operating from standpoint epistemology—are statistically more likely to investigate systemic racial stratification. I ranked the interaction between `social_science` and `news_inequality_mentions_3_years` second, also with a positive sign, to reflect the differential sensitivity of academic disciplines to societal shocks; while natural sciences generally remain insulated from news cycles, social science research agendas are rapidly shaped by public discourse and societal urgency regarding inequality. Finally, I ranked the interaction between the `black` and `female` features third with a positive sign, drawing directly on the theory of intersectionality. Author teams that have high estimated shares of both Black and female scholars represent a unique epistemological vantage point that has historically pioneered critical race theory and intersectional feminism, making this combined demographic profile a exceptionally strong predictor of scholarship focused on systemic racial disparities."}, {"id": "GenAI-20", "name": "Theorista_GPT5.5_instant", "x": 0.5347758770505753, "y": 0.41852220479794444, "degree": 24, "words": 164, "explanation": "I expect the interaction between social_science and paper_inequality_mentions_3_years to be the strongest because academic trends are likely to have their greatest influence in disciplines that already specialize in studying social inequality. When inequality research is expanding, social scientists are especially likely to produce additional work on racial inequality, creating a positive interaction. I similarly expect a positive interaction between social_science and news_inequality_mentions_3_years, as public attention to inequality can shape research agendas, funding priorities, and publication opportunities, with social-science disciplines being particularly responsive to these societal developments. Finally, I expect a positive interaction between the share of Black authors and the authors' race diversity score because teams that are both more diverse and include greater Black representation may combine lived experience with complementary perspectives and networks, increasing the likelihood of identifying and pursuing research questions related to racial inequality. Overall, these interactions reflect the assumption that the effects of disciplinary context, social identity, and the broader intellectual environment reinforce one another rather than operating independently."}, {"id": "GenAI-21", "name": "Theorista_GPT5.5_thinking_standard", "x": 0.49766981904795915, "y": 0.14337922112720825, "degree": 24, "words": 148, "explanation": "I chose these interactions because my theory is that racial-inequality mentions are produced by the conjunction of discursive salience and disciplinary receptivity. Recent academic inequality discourse should have its strongest positive effect in social-science fields because these fields provide the concepts, journals, reviewers, and audiences through which inequality language can diffuse into new papers. Similarly, recent news attention to inequality should matter more for social-science papers than for natural-science or engineering papers, because social-science research is more directly responsive to public problems, policy debates, and social movements. I also expect `black × social_science` to be positive because author standpoint and network exposure are more likely to translate into explicit racial-inequality research when the disciplinary environment legitimates racial inequality as a central object of study. In short, `social_science` amplifies the effects of both ambient discourse and author composition on whether racial inequality is named in the title or abstract."}, {"id": "GenAI-22", "name": "Qwen_3.8Max_thinking", "x": 0.180351703722807, "y": 0.8199640471518153, "degree": 23, "words": 1055, "explanation": "The three interactions I selected—`black × social_science`, `news_inequality_mentions_3_years × social_science`, and `black × news_inequality_mentions_3_years`—are united by a single theoretical conviction: racial inequality scholarship does not emerge from any single cause in isolation but from the *convergence* of identity, institutional context, and temporal-political opportunity, and it is precisely at the intersections of these forces that the probability of racial inequality discourse rises most sharply. I rank `black × social_science` first because I consider this interaction to be the most structurally fundamental. The underlying assumption is that the relationship between author racial identity and topic selection is not a simple additive main effect but is fundamentally *gated* by disciplinary context. A Black scholar possesses, through lived experience and community ties, what standpoint theorists (Collins, 2000; Harding, 1991) call \"epistemic advantage\" regarding racial inequality—an intimate familiarity with the phenomenon that generates both the motivation to study it and the interpretive frameworks to recognize it as a structural problem rather than an individual misfortune. However, this epistemic advantage can only be converted into published scholarship when the institutional environment provides the conceptual language (e.g., systemic racism, racial stratification), the methodological infrastructure (e.g., survey instruments for measuring discrimination, archival collections on racial violence), and the legitimating norms (e.g., peer reviewers who recognize racial inequality as a valid research question) necessary for such work. In social science departments, these conditions are met; in a biochemistry laboratory or an aerospace engineering program, they are almost entirely absent. I therefore expect a strong positive interaction: the marginal effect of `black` on racial inequality mention is substantially larger when `social_science = 1` than when it equals zero, and conversely, the marginal effect of `social_science` is amplified when the author team has higher Black representation. This is not merely a statistical convenience but reflects a genuine causal mechanism of *institutional enablement*: identity supplies the motivation, and discipline supplies the means. I rank `news_inequality_mentions_3_years × social_science` second because it captures a different but equally important conditional mechanism: the *permeability* of academic disciplines to external societal shocks. My assumption here is that the transmission of public discourse into academic production is not uniform across the knowledge system but is heavily concentrated in disciplines whose epistemological mission is to understand and explain social phenomena. When a wave of media attention to racial inequality sweeps through public discourse—triggered, for example, by the police killings of Michael Brown, Eric Garner, or George Floyd—social scientists experience this as directly relevant to their research programs. Sociology journals issue special calls for papers on racial justice; political science departments organize panels on the politics of race; psychology labs accelerate ongoing projects on racial bias. In these fields, the boundary between \"society\" and \"the academy\" is intentionally porous. By contrast, a spike in news coverage of racial inequality has virtually no mechanism through which it would alter the research agenda of a condensed matter physicist or an organic chemist, whose work is governed by internal scientific questions largely decoupled from current events. The positive sign of this interaction reflects my belief that societal salience and disciplinary orientation are *complements*: news attention provides the stimulus, and social science provides the receptive apparatus. Neither alone is as powerful as their combination. I rank this second rather than first because, while the societal-to-academic transmission channel is important, I believe it is somewhat more episodic and event-driven than the structural identity-by-institution interaction, which operates continuously regardless of whether a particular crisis is in the news cycle. I rank `black × news_inequality_mentions_3_years` third because it captures what I call a *resonance* or *mobilization* effect that operates at the intersection of personal identity and historical moment. My reasoning is that when racial inequality becomes salient in public discourse, this salience does not affect all scholars equally. Black scholars experience public episodes of racial injustice—police brutality, hate crimes, political backlash against racial equity policies—not as abstract news items but as events that implicate their own communities, families, and bodily safety. This personal stake generates a powerful motivational surge to contribute scholarly analysis, to document the phenomenon, and to intervene in public debate through academic channels. Simultaneously, institutional demand for Black scholarly voices rises during such periods: journal editors solicit commentary from Black experts, funding agencies create rapid-response grants on racial justice, and universities seek to demonstrate institutional responsiveness by amplifying the work of Black faculty. The positive sign reflects this dual mobilization—both internal (motivation) and external (demand)—that amplifies the effect of news salience specifically for author teams with higher Black representation. I rank this third because, while theoretically compelling, I believe its empirical magnitude may be somewhat smaller than the first two interactions. The identity-by-institution interaction (Rank 1) operates as a persistent structural condition affecting every paper a Black social scientist produces, whereas the identity-by-news interaction (Rank 3) operates primarily during periods of heightened public salience, which, while impactful, represent a subset of the total time window. Additionally, the news-by-institution interaction (Rank 2) affects the entire population of social scientists during salient periods, whereas the identity-by-news interaction affects only the subset of scholars with higher Black representation, implying a smaller aggregate effect. A critical assumption underlying all three interactions is that the production of racial inequality scholarship is characterized by *multiplicative* rather than merely additive causation. That is, I do not believe that identity, institution, and context simply contribute independent increments of probability. Rather, I believe they function as *necessary complements*: identity without institutional support remains unrealized potential; institutional support without motivated actors produces generic scholarship that may not foreground race; and both identity and institution without temporal-political opportunity produce steady-state output rather than the surges that characterize moments of racial reckoning. The positive signs on all three interactions reflect this complementarity logic—each pair of features amplifies the other's effect on the outcome. I did not select any negatively signed interactions among my top three because I believe the most theoretically important conditional relationships in this domain are synergistic rather than suppressive. Negative interactions certainly exist—for example, `black × natural_science` would likely be negative, reflecting the suppression of identity-driven topic selection in disciplines inhospitable to racial inequality research—but I view these as the logical mirror image of the positive interactions I selected (i.e., `black × social_science` being positive implies that the effect of `black` is weaker outside social science, which includes natural science), and thus less theoretically distinctive to highlight separately."}, {"id": "GenAI-23", "name": "gemini_3.6flash_extended", "x": 0.9199999999999999, "y": 0.5155235635645623, "degree": 24, "words": 142, "explanation": "The chosen second-order interactions reflect synergistic amplifications across institutional discipline, author identity, intersectional standpoint theory, and macro-bibliometric trends. The top-ranked interaction, `social_science` × `black` (+), highlights how institutional disciplinary contexts interact with author identity: social science disciplines provide the methodological frameworks and epistemological legitimacy that enable Black scholars—who possess crucial standpoint knowledge regarding racial marginalization—to translate their research agendas into explicit analyses of racial inequality. The second interaction, `social_science` × `paper_inequality_mentions_3_years` (+), captures a disciplinary receptivity effect, wherein macro-level academic momentum surrounding inequality is disproportionately absorbed and amplified within social science publications compared to technical or natural science fields. Finally, the third interaction, `female` × `black` (+), is grounded in intersectional theory, which posits that teams with higher representation of Black female scholars possess a compound epistemic perspective that inherently heightens critical scholarly focus on complex structures of oppression and institutional stratification."}, {"id": "GenAI-24", "name": "GPT_5.6Sol_high", "x": 0.7798607185204949, "y": 0.755100746547796, "degree": 23, "words": 186, "explanation": "I rank `social_science × paper_inequality_mentions_3_years` first because broad growth in academic inequality discourse should be most likely to produce explicit racial-inequality language in disciplines where race and stratification are already legitimate and established research topics. Its positive sign assumes that social-science institutions amplify, rather than merely add to, the influence of the wider academic agenda. I rank `social_science × black` second because the association between a higher estimated share of Black authors and racial-inequality research should be stronger where disciplinary theories, methods, journals, and audiences make such questions easier to formulate and publish. This interaction is positive, but I expect it to be less robust than the first because `black` is an indirect probabilistic estimate based on names and inferred countries of birth rather than observed author identity. I rank `news_inequality_mentions_3_years × paper_inequality_mentions_3_years` third because public and scholarly attention may mutually reinforce one another: news coverage raises salience and urgency, while an active academic literature supplies concepts, evidence, and publication opportunities. The positive sign therefore represents a reinforcing agenda-setting process in which racial-inequality mentions become especially likely when both public and academic inequality discourse are elevated."}], "links": [{"source": "GenAI-0", "target": "GenAI-1", "similarity": 0.8759}, {"source": "GenAI-0", "target": "GenAI-2", "similarity": 0.8586}, {"source": "GenAI-0", "target": "GenAI-3", "similarity": 0.8318}, {"source": "GenAI-0", "target": "GenAI-4", "similarity": 0.8499}, {"source": "GenAI-0", "target": "GenAI-5", "similarity": 0.8823}, {"source": "GenAI-0", "target": "GenAI-6", "similarity": 0.8743}, {"source": "GenAI-0", "target": "GenAI-7", "similarity": 0.8564}, {"source": "GenAI-0", "target": "GenAI-8", "similarity": 0.8302}, {"source": "GenAI-0", "target": "GenAI-9", "similarity": 0.8645}, {"source": "GenAI-0", "target": "GenAI-10", "similarity": 0.8442}, {"source": "GenAI-0", "target": "GenAI-11", "similarity": 0.8743}, {"source": "GenAI-0", "target": "GenAI-12", "similarity": 0.8495}, {"source": "GenAI-0", "target": "GenAI-13", "similarity": 0.8638}, {"source": "GenAI-0", "target": "GenAI-14", "similarity": 0.8724}, {"source": "GenAI-0", "target": "GenAI-15", "similarity": 0.9054}, {"source": "GenAI-0", "target": "GenAI-16", "similarity": 0.9073}, {"source": "GenAI-0", "target": "GenAI-17", "similarity": 0.8974}, {"source": "GenAI-0", "target": "GenAI-18", "similarity": 0.9381}, {"source": "GenAI-0", "target": "GenAI-19", "similarity": 0.7996}, {"source": "GenAI-0", "target": "GenAI-20", "similarity": 0.9058}, {"source": "GenAI-0", "target": "GenAI-21", "similarity": 0.8794}, {"source": "GenAI-0", "target": "GenAI-22", "similarity": 0.7994}, {"source": "GenAI-0", "target": "GenAI-23", "similarity": 0.8355}, {"source": "GenAI-0", "target": "GenAI-24", "similarity": 0.8392}, {"source": "GenAI-1", "target": "GenAI-2", "similarity": 0.791}, {"source": "GenAI-1", "target": "GenAI-3", "similarity": 0.839}, {"source": "GenAI-1", "target": "GenAI-4", "similarity": 0.8286}, {"source": "GenAI-1", "target": "GenAI-5", "similarity": 0.8556}, {"source": "GenAI-1", "target": "GenAI-6", "similarity": 0.8284}, {"source": "GenAI-1", "target": "GenAI-7", "similarity": 0.8216}, {"source": "GenAI-1", "target": "GenAI-8", "similarity": 0.8424}, {"source": "GenAI-1", "target": "GenAI-9", "similarity": 0.8723}, {"source": "GenAI-1", "target": "GenAI-10", "similarity": 0.8311}, {"source": "GenAI-1", "target": "GenAI-11", "similarity": 0.8467}, {"source": "GenAI-1", "target": "GenAI-12", "similarity": 0.8363}, {"source": "GenAI-1", "target": "GenAI-13", "similarity": 0.8648}, {"source": "GenAI-1", "target": "GenAI-14", "similarity": 0.8392}, {"source": "GenAI-1", "target": "GenAI-15", "similarity": 0.8677}, {"source": "GenAI-1", "target": "GenAI-16", "similarity": 0.8953}, {"source": "GenAI-1", "target": "GenAI-17", "similarity": 0.8568}, {"source": "GenAI-1", "target": "GenAI-18", "similarity": 0.8714}, {"source": "GenAI-1", "target": "GenAI-20", "similarity": 0.8696}, {"source": "GenAI-1", "target": "GenAI-21", "similarity": 0.8815}, {"source": "GenAI-1", "target": "GenAI-23", "similarity": 0.8015}, {"source": "GenAI-1", "target": "GenAI-24", "similarity": 0.789}, {"source": "GenAI-2", "target": "GenAI-3", "similarity": 0.8156}, {"source": "GenAI-2", "target": "GenAI-4", "similarity": 0.8098}, {"source": "GenAI-2", "target": "GenAI-5", "similarity": 0.8244}, {"source": "GenAI-2", "target": "GenAI-6", "similarity": 0.8457}, {"source": "GenAI-2", "target": "GenAI-7", "similarity": 0.8164}, {"source": "GenAI-2", "target": "GenAI-8", "similarity": 0.8243}, {"source": "GenAI-2", "target": "GenAI-9", "similarity": 0.8209}, {"source": "GenAI-2", "target": "GenAI-10", "similarity": 0.8315}, {"source": "GenAI-2", "target": "GenAI-11", "similarity": 0.828}, {"source": "GenAI-2", "target": "GenAI-12", "similarity": 0.8391}, {"source": "GenAI-2", "target": "GenAI-13", "similarity": 0.7969}, {"source": "GenAI-2", "target": "GenAI-14", "similarity": 0.8631}, {"source": "GenAI-2", "target": "GenAI-15", "similarity": 0.822}, {"source": "GenAI-2", "target": "GenAI-16", "similarity": 0.8424}, {"source": "GenAI-2", "target": "GenAI-17", "similarity": 0.8569}, {"source": "GenAI-2", "target": "GenAI-18", "similarity": 0.8586}, {"source": "GenAI-2", "target": "GenAI-19", "similarity": 0.8412}, {"source": "GenAI-2", "target": "GenAI-20", "similarity": 0.833}, {"source": "GenAI-2", "target": "GenAI-21", "similarity": 0.8247}, {"source": "GenAI-2", "target": "GenAI-22", "similarity": 0.8108}, {"source": "GenAI-2", "target": "GenAI-23", "similarity": 0.8753}, {"source": "GenAI-2", "target": "GenAI-24", "similarity": 0.813}, {"source": "GenAI-3", "target": "GenAI-4", "similarity": 0.8551}, {"source": "GenAI-3", "target": "GenAI-5", "similarity": 0.8598}, {"source": "GenAI-3", "target": "GenAI-6", "similarity": 0.8907}, {"source": "GenAI-3", "target": "GenAI-7", "similarity": 0.9073}, {"source": "GenAI-3", "target": "GenAI-8", "similarity": 0.8934}, {"source": "GenAI-3", "target": "GenAI-9", "similarity": 0.8917}, {"source": "GenAI-3", "target": "GenAI-10", "similarity": 0.8608}, {"source": "GenAI-3", "target": "GenAI-11", "similarity": 0.8994}, {"source": "GenAI-3", "target": "GenAI-12", "similarity": 0.8862}, {"source": "GenAI-3", "target": "GenAI-13", "similarity": 0.9076}, {"source": "GenAI-3", "target": "GenAI-14", "similarity": 0.8677}, {"source": "GenAI-3", "target": "GenAI-15", "similarity": 0.8704}, {"source": "GenAI-3", "target": "GenAI-16", "similarity": 0.8693}, {"source": "GenAI-3", "target": "GenAI-17", "similarity": 0.864}, {"source": "GenAI-3", "target": "GenAI-18", "similarity": 0.8461}, {"source": "GenAI-3", "target": "GenAI-19", "similarity": 0.8135}, {"source": "GenAI-3", "target": "GenAI-20", "similarity": 0.8626}, {"source": "GenAI-3", "target": "GenAI-21", "similarity": 0.8498}, {"source": "GenAI-3", "target": "GenAI-22", "similarity": 0.8511}, {"source": "GenAI-3", "target": "GenAI-23", "similarity": 0.8384}, {"source": "GenAI-3", "target": "GenAI-24", "similarity": 0.7933}, {"source": "GenAI-4", "target": "GenAI-5", "similarity": 0.8798}, {"source": "GenAI-4", "target": "GenAI-6", "similarity": 0.8579}, {"source": "GenAI-4", "target": "GenAI-7", "similarity": 0.8305}, {"source": "GenAI-4", "target": "GenAI-8", "similarity": 0.8466}, {"source": "GenAI-4", "target": "GenAI-9", "similarity": 0.8639}, {"source": "GenAI-4", "target": "GenAI-10", "similarity": 0.8353}, {"source": "GenAI-4", "target": "GenAI-11", "similarity": 0.8382}, {"source": "GenAI-4", "target": "GenAI-12", "similarity": 0.8455}, {"source": "GenAI-4", "target": "GenAI-13", "similarity": 0.8265}, {"source": "GenAI-4", "target": "GenAI-14", "similarity": 0.826}, {"source": "GenAI-4", "target": "GenAI-15", "similarity": 0.8398}, {"source": "GenAI-4", "target": "GenAI-16", "similarity": 0.8455}, {"source": "GenAI-4", "target": "GenAI-17", "similarity": 0.8625}, {"source": "GenAI-4", "target": "GenAI-18", "similarity": 0.8686}, {"source": "GenAI-4", "target": "GenAI-19", "similarity": 0.7778}, {"source": "GenAI-4", "target": "GenAI-20", "similarity": 0.8279}, {"source": "GenAI-4", "target": "GenAI-21", "similarity": 0.8375}, {"source": "GenAI-4", "target": "GenAI-22", "similarity": 0.8061}, {"source": "GenAI-4", "target": "GenAI-23", "similarity": 0.7778}, {"source": "GenAI-4", "target": "GenAI-24", "similarity": 0.8083}, {"source": "GenAI-5", "target": "GenAI-6", "similarity": 0.9067}, {"source": "GenAI-5", "target": "GenAI-7", "similarity": 0.8441}, {"source": "GenAI-5", "target": "GenAI-8", "similarity": 0.8548}, {"source": "GenAI-5", "target": "GenAI-9", "similarity": 0.8834}, {"source": "GenAI-5", "target": "GenAI-10", "similarity": 0.86}, {"source": "GenAI-5", "target": "GenAI-11", "similarity": 0.8747}, {"source": "GenAI-5", "target": "GenAI-12", "similarity": 0.8445}, {"source": "GenAI-5", "target": "GenAI-13", "similarity": 0.8678}, {"source": "GenAI-5", "target": "GenAI-14", "similarity": 0.8838}, {"source": "GenAI-5", "target": "GenAI-15", "similarity": 0.8541}, {"source": "GenAI-5", "target": "GenAI-16", "similarity": 0.8642}, {"source": "GenAI-5", "target": "GenAI-17", "similarity": 0.8532}, {"source": "GenAI-5", "target": "GenAI-18", "similarity": 0.8956}, {"source": "GenAI-5", "target": "GenAI-19", "similarity": 0.7959}, {"source": "GenAI-5", "target": "GenAI-20", "similarity": 0.8392}, {"source": "GenAI-5", "target": "GenAI-21", "similarity": 0.8573}, {"source": "GenAI-5", "target": "GenAI-22", "similarity": 0.7911}, {"source": "GenAI-5", "target": "GenAI-23", "similarity": 0.8474}, {"source": "GenAI-5", "target": "GenAI-24", "similarity": 0.8117}, {"source": "GenAI-6", "target": "GenAI-7", "similarity": 0.8692}, {"source": "GenAI-6", "target": "GenAI-8", "similarity": 0.8478}, {"source": "GenAI-6", "target": "GenAI-9", "similarity": 0.8573}, {"source": "GenAI-6", "target": "GenAI-10", "similarity": 0.8465}, {"source": "GenAI-6", "target": "GenAI-11", "similarity": 0.8813}, {"source": "GenAI-6", "target": "GenAI-12", "similarity": 0.8561}, {"source": "GenAI-6", "target": "GenAI-13", "similarity": 0.9034}, {"source": "GenAI-6", "target": "GenAI-14", "similarity": 0.8885}, {"source": "GenAI-6", "target": "GenAI-15", "similarity": 0.8844}, {"source": "GenAI-6", "target": "GenAI-16", "similarity": 0.8699}, {"source": "GenAI-6", "target": "GenAI-17", "similarity": 0.8872}, {"source": "GenAI-6", "target": "GenAI-18", "similarity": 0.8915}, {"source": "GenAI-6", "target": "GenAI-19", "similarity": 0.8486}, {"source": "GenAI-6", "target": "GenAI-20", "similarity": 0.8633}, {"source": "GenAI-6", "target": "GenAI-21", "similarity": 0.8389}, {"source": "GenAI-6", "target": "GenAI-22", "similarity": 0.843}, {"source": "GenAI-6", "target": "GenAI-23", "similarity": 0.8641}, {"source": "GenAI-6", "target": "GenAI-24", "similarity": 0.854}, {"source": "GenAI-7", "target": "GenAI-8", "similarity": 0.8836}, {"source": "GenAI-7", "target": "GenAI-9", "similarity": 0.8857}, {"source": "GenAI-7", "target": "GenAI-10", "similarity": 0.8622}, {"source": "GenAI-7", "target": "GenAI-11", "similarity": 0.9111}, {"source": "GenAI-7", "target": "GenAI-12", "similarity": 0.878}, {"source": "GenAI-7", "target": "GenAI-13", "similarity": 0.8522}, {"source": "GenAI-7", "target": "GenAI-14", "similarity": 0.8766}, {"source": "GenAI-7", "target": "GenAI-15", "similarity": 0.8518}, {"source": "GenAI-7", "target": "GenAI-16", "similarity": 0.8372}, {"source": "GenAI-7", "target": "GenAI-17", "similarity": 0.8254}, {"source": "GenAI-7", "target": "GenAI-18", "similarity": 0.8411}, {"source": "GenAI-7", "target": "GenAI-19", "similarity": 0.8234}, {"source": "GenAI-7", "target": "GenAI-20", "similarity": 0.8437}, {"source": "GenAI-7", "target": "GenAI-21", "similarity": 0.8305}, {"source": "GenAI-7", "target": "GenAI-22", "similarity": 0.8568}, {"source": "GenAI-7", "target": "GenAI-23", "similarity": 0.835}, {"source": "GenAI-8", "target": "GenAI-9", "similarity": 0.9054}, {"source": "GenAI-8", "target": "GenAI-10", "similarity": 0.8899}, {"source": "GenAI-8", "target": "GenAI-11", "similarity": 0.9099}, {"source": "GenAI-8", "target": "GenAI-12", "similarity": 0.8961}, {"source": "GenAI-8", "target": "GenAI-13", "similarity": 0.8539}, {"source": "GenAI-8", "target": "GenAI-14", "similarity": 0.8595}, {"source": "GenAI-8", "target": "GenAI-15", "similarity": 0.8644}, {"source": "GenAI-8", "target": "GenAI-16", "similarity": 0.8718}, {"source": "GenAI-8", "target": "GenAI-17", "similarity": 0.8346}, {"source": "GenAI-8", "target": "GenAI-18", "similarity": 0.8409}, {"source": "GenAI-8", "target": "GenAI-20", "similarity": 0.8348}, {"source": "GenAI-8", "target": "GenAI-21", "similarity": 0.8448}, {"source": "GenAI-8", "target": "GenAI-22", "similarity": 0.8178}, {"source": "GenAI-8", "target": "GenAI-23", "similarity": 0.8295}, {"source": "GenAI-8", "target": "GenAI-24", "similarity": 0.7755}, {"source": "GenAI-9", "target": "GenAI-10", "similarity": 0.8841}, {"source": "GenAI-9", "target": "GenAI-11", "similarity": 0.8896}, {"source": "GenAI-9", "target": "GenAI-12", "similarity": 0.8995}, {"source": "GenAI-9", "target": "GenAI-13", "similarity": 0.8734}, {"source": "GenAI-9", "target": "GenAI-14", "similarity": 0.8663}, {"source": "GenAI-9", "target": "GenAI-15", "similarity": 0.8727}, {"source": "GenAI-9", "target": "GenAI-16", "similarity": 0.8783}, {"source": "GenAI-9", "target": "GenAI-17", "similarity": 0.8641}, {"source": "GenAI-9", "target": "GenAI-18", "similarity": 0.8757}, {"source": "GenAI-9", "target": "GenAI-19", "similarity": 0.7809}, {"source": "GenAI-9", "target": "GenAI-20", "similarity": 0.8555}, {"source": "GenAI-9", "target": "GenAI-21", "similarity": 0.8796}, {"source": "GenAI-9", "target": "GenAI-22", "similarity": 0.8331}, {"source": "GenAI-9", "target": "GenAI-23", "similarity": 0.8204}, {"source": "GenAI-9", "target": "GenAI-24", "similarity": 0.8103}, {"source": "GenAI-10", "target": "GenAI-11", "similarity": 0.8845}, {"source": "GenAI-10", "target": "GenAI-12", "similarity": 0.8767}, {"source": "GenAI-10", "target": "GenAI-13", "similarity": 0.8435}, {"source": "GenAI-10", "target": "GenAI-14", "similarity": 0.8859}, {"source": "GenAI-10", "target": "GenAI-15", "similarity": 0.8719}, {"source": "GenAI-10", "target": "GenAI-16", "similarity": 0.8528}, {"source": "GenAI-10", "target": "GenAI-17", "similarity": 0.8354}, {"source": "GenAI-10", "target": "GenAI-18", "similarity": 0.8485}, {"source": "GenAI-10", "target": "GenAI-19", "similarity": 0.7796}, {"source": "GenAI-10", "target": "GenAI-20", "similarity": 0.8494}, {"source": "GenAI-10", "target": "GenAI-21", "similarity": 0.8354}, {"source": "GenAI-10", "target": "GenAI-22", "similarity": 0.7981}, {"source": "GenAI-10", "target": "GenAI-23", "similarity": 0.8634}, {"source": "GenAI-10", "target": "GenAI-24", "similarity": 0.8041}, {"source": "GenAI-11", "target": "GenAI-12", "similarity": 0.895}, {"source": "GenAI-11", "target": "GenAI-13", "similarity": 0.8891}, {"source": "GenAI-11", "target": "GenAI-14", "similarity": 0.9001}, {"source": "GenAI-11", "target": "GenAI-15", "similarity": 0.8928}, {"source": "GenAI-11", "target": "GenAI-16", "similarity": 0.8726}, {"source": "GenAI-11", "target": "GenAI-17", "similarity": 0.8463}, {"source": "GenAI-11", "target": "GenAI-18", "similarity": 0.8744}, {"source": "GenAI-11", "target": "GenAI-20", "similarity": 0.8755}, {"source": "GenAI-11", "target": "GenAI-21", "similarity": 0.8417}, {"source": "GenAI-11", "target": "GenAI-22", "similarity": 0.8115}, {"source": "GenAI-11", "target": "GenAI-23", "similarity": 0.8501}, {"source": "GenAI-11", "target": "GenAI-24", "similarity": 0.7734}, {"source": "GenAI-12", "target": "GenAI-13", "similarity": 0.8691}, {"source": "GenAI-12", "target": "GenAI-14", "similarity": 0.8437}, {"source": "GenAI-12", "target": "GenAI-15", "similarity": 0.8864}, {"source": "GenAI-12", "target": "GenAI-16", "similarity": 0.8683}, {"source": "GenAI-12", "target": "GenAI-17", "similarity": 0.8739}, {"source": "GenAI-12", "target": "GenAI-18", "similarity": 0.8869}, {"source": "GenAI-12", "target": "GenAI-19", "similarity": 0.7861}, {"source": "GenAI-12", "target": "GenAI-20", "similarity": 0.8551}, {"source": "GenAI-12", "target": "GenAI-21", "similarity": 0.8424}, {"source": "GenAI-12", "target": "GenAI-22", "similarity": 0.8522}, {"source": "GenAI-12", "target": "GenAI-23", "similarity": 0.8489}, {"source": "GenAI-12", "target": "GenAI-24", "similarity": 0.8149}, {"source": "GenAI-13", "target": "GenAI-14", "similarity": 0.8697}, {"source": "GenAI-13", "target": "GenAI-15", "similarity": 0.9218}, {"source": "GenAI-13", "target": "GenAI-16", "similarity": 0.9118}, {"source": "GenAI-13", "target": "GenAI-17", "similarity": 0.8673}, {"source": "GenAI-13", "target": "GenAI-18", "similarity": 0.8812}, {"source": "GenAI-13", "target": "GenAI-19", "similarity": 0.8031}, {"source": "GenAI-13", "target": "GenAI-20", "similarity": 0.9075}, {"source": "GenAI-13", "target": "GenAI-21", "similarity": 0.8658}, {"source": "GenAI-13", "target": "GenAI-22", "similarity": 0.8032}, {"source": "GenAI-13", "target": "GenAI-23", "similarity": 0.8377}, {"source": "GenAI-13", "target": "GenAI-24", "similarity": 0.8376}, {"source": "GenAI-14", "target": "GenAI-15", "similarity": 0.8717}, {"source": "GenAI-14", "target": "GenAI-16", "similarity": 0.8615}, {"source": "GenAI-14", "target": "GenAI-17", "similarity": 0.8422}, {"source": "GenAI-14", "target": "GenAI-18", "similarity": 0.8615}, {"source": "GenAI-14", "target": "GenAI-19", "similarity": 0.8176}, {"source": "GenAI-14", "target": "GenAI-20", "similarity": 0.8799}, {"source": "GenAI-14", "target": "GenAI-21", "similarity": 0.8374}, {"source": "GenAI-14", "target": "GenAI-22", "similarity": 0.7897}, {"source": "GenAI-14", "target": "GenAI-23", "similarity": 0.8915}, {"source": "GenAI-14", "target": "GenAI-24", "similarity": 0.8052}, {"source": "GenAI-15", "target": "GenAI-16", "similarity": 0.9318}, {"source": "GenAI-15", "target": "GenAI-17", "similarity": 0.9001}, {"source": "GenAI-15", "target": "GenAI-18", "similarity": 0.9058}, {"source": "GenAI-15", "target": "GenAI-19", "similarity": 0.7885}, {"source": "GenAI-15", "target": "GenAI-20", "similarity": 0.9322}, {"source": "GenAI-15", "target": "GenAI-21", "similarity": 0.8891}, {"source": "GenAI-15", "target": "GenAI-22", "similarity": 0.8145}, {"source": "GenAI-15", "target": "GenAI-23", "similarity": 0.833}, {"source": "GenAI-15", "target": "GenAI-24", "similarity": 0.8723}, {"source": "GenAI-16", "target": "GenAI-17", "similarity": 0.9126}, {"source": "GenAI-16", "target": "GenAI-18", "similarity": 0.9067}, {"source": "GenAI-16", "target": "GenAI-19", "similarity": 0.7823}, {"source": "GenAI-16", "target": "GenAI-20", "similarity": 0.9299}, {"source": "GenAI-16", "target": "GenAI-21", "similarity": 0.9152}, {"source": "GenAI-16", "target": "GenAI-22", "similarity": 0.8033}, {"source": "GenAI-16", "target": "GenAI-23", "similarity": 0.8317}, {"source": "GenAI-16", "target": "GenAI-24", "similarity": 0.8469}, {"source": "GenAI-17", "target": "GenAI-18", "similarity": 0.921}, {"source": "GenAI-17", "target": "GenAI-19", "similarity": 0.829}, {"source": "GenAI-17", "target": "GenAI-20", "similarity": 0.8834}, {"source": "GenAI-17", "target": "GenAI-21", "similarity": 0.8968}, {"source": "GenAI-17", "target": "GenAI-22", "similarity": 0.8309}, {"source": "GenAI-17", "target": "GenAI-23", "similarity": 0.82}, {"source": "GenAI-17", "target": "GenAI-24", "similarity": 0.8849}, {"source": "GenAI-18", "target": "GenAI-19", "similarity": 0.7945}, {"source": "GenAI-18", "target": "GenAI-20", "similarity": 0.8855}, {"source": "GenAI-18", "target": "GenAI-21", "similarity": 0.8738}, {"source": "GenAI-18", "target": "GenAI-22", "similarity": 0.8167}, {"source": "GenAI-18", "target": "GenAI-23", "similarity": 0.8403}, {"source": "GenAI-18", "target": "GenAI-24", "similarity": 0.8617}, {"source": "GenAI-19", "target": "GenAI-20", "similarity": 0.7786}, {"source": "GenAI-19", "target": "GenAI-21", "similarity": 0.7932}, {"source": "GenAI-19", "target": "GenAI-22", "similarity": 0.8214}, {"source": "GenAI-19", "target": "GenAI-23", "similarity": 0.8202}, {"source": "GenAI-19", "target": "GenAI-24", "similarity": 0.8228}, {"source": "GenAI-20", "target": "GenAI-21", "similarity": 0.8634}, {"source": "GenAI-20", "target": "GenAI-22", "similarity": 0.7958}, {"source": "GenAI-20", "target": "GenAI-23", "similarity": 0.8112}, {"source": "GenAI-20", "target": "GenAI-24", "similarity": 0.8567}, {"source": "GenAI-21", "target": "GenAI-22", "similarity": 0.7826}, {"source": "GenAI-21", "target": "GenAI-23", "similarity": 0.792}, {"source": "GenAI-21", "target": "GenAI-24", "similarity": 0.8252}, {"source": "GenAI-22", "target": "GenAI-23", "similarity": 0.7847}, {"source": "GenAI-22", "target": "GenAI-24", "similarity": 0.8004}, {"source": "GenAI-23", "target": "GenAI-24", "similarity": 0.7797}]}]}</script>
+  <script id="nav-data" type="application/json">[{"href": "gender/main-effects/post-ML/raw_embedding_dimension_3072/05_semantic_threshold_network.html", "task": "gender", "theory_type": "main-effects", "phase": "post-ML", "variant_key": "three_groups", "title": "Gender · Main Effects · Post ML", "subtitle": "Semantic Network", "variant": "Three groups (PhDs, Senior Scientists, GenAI)"}, {"href": "gender/main-effects/post-ML/raw_embedding_dimension_3072/05_semantic_threshold_network_collapsed.html", "task": "gender", "theory_type": "main-effects", "phase": "post-ML", "variant_key": "collapsed", "title": "Gender · Main Effects · Post ML", "subtitle": "Semantic Network", "variant": "Two groups (Humans and GenAI)"}, {"href": "gender/main-effects/pre-ML/raw_embedding_dimension_3072/05_semantic_threshold_network.html", "task": "gender", "theory_type": "main-effects", "phase": "pre-ML", "variant_key": "three_groups", "title": "Gender · Main Effects · Pre ML", "subtitle": "Semantic Network", "variant": "Three groups (PhDs, Senior Scientists, GenAI)"}, {"href": "gender/main-effects/pre-ML/raw_embedding_dimension_3072/05_semantic_threshold_network_collapsed.html", "task": "gender", "theory_type": "main-effects", "phase": "pre-ML", "variant_key": "collapsed", "title": "Gender · Main Effects · Pre ML", "subtitle": "Semantic Network", "variant": "Two groups (Humans and GenAI)"}, {"href": "gender/soi/post-ML/raw_embedding_dimension_3072/05_semantic_threshold_network.html", "task": "gender", "theory_type": "soi", "phase": "post-ML", "variant_key": "three_groups", "title": "Gender · Interactions · Post ML", "subtitle": "Semantic Network", "variant": "Three groups (PhDs, Senior Scientists, GenAI)"}, {"href": "gender/soi/post-ML/raw_embedding_dimension_3072/05_semantic_threshold_network_collapsed.html", "task": "gender", "theory_type": "soi", "phase": "post-ML", "variant_key": "collapsed", "title": "Gender · Interactions · Post ML", "subtitle": "Semantic Network", "variant": "Two groups (Humans and GenAI)"}, {"href": "gender/soi/pre-ML/raw_embedding_dimension_3072/05_semantic_threshold_network.html", "task": "gender", "theory_type": "soi", "phase": "pre-ML", "variant_key": "three_groups", "title": "Gender · Interactions · Pre ML", "subtitle": "Semantic Network", "variant": "Three groups (PhDs, Senior Scientists, GenAI)"}, {"href": "gender/soi/pre-ML/raw_embedding_dimension_3072/05_semantic_threshold_network_collapsed.html", "task": "gender", "theory_type": "soi", "phase": "pre-ML", "variant_key": "collapsed", "title": "Gender · Interactions · Pre ML", "subtitle": "Semantic Network", "variant": "Two groups (Humans and GenAI)"}, {"href": "race/main-effects/post-ML/raw_embedding_dimension_3072/05_semantic_threshold_network.html", "task": "race", "theory_type": "main-effects", "phase": "post-ML", "variant_key": "three_groups", "title": "Race · Main Effects · Post ML", "subtitle": "Semantic Network", "variant": "Three groups (PhDs, Senior Scientists, GenAI)"}, {"href": "race/main-effects/post-ML/raw_embedding_dimension_3072/05_semantic_threshold_network_collapsed.html", "task": "race", "theory_type": "main-effects", "phase": "post-ML", "variant_key": "collapsed", "title": "Race · Main Effects · Post ML", "subtitle": "Semantic Network", "variant": "Two groups (Humans and GenAI)"}, {"href": "race/main-effects/pre-ML/raw_embedding_dimension_3072/05_semantic_threshold_network.html", "task": "race", "theory_type": "main-effects", "phase": "pre-ML", "variant_key": "three_groups", "title": "Race · Main Effects · Pre ML", "subtitle": "Semantic Network", "variant": "Three groups (PhDs, Senior Scientists, GenAI)"}, {"href": "race/main-effects/pre-ML/raw_embedding_dimension_3072/05_semantic_threshold_network_collapsed.html", "task": "race", "theory_type": "main-effects", "phase": "pre-ML", "variant_key": "collapsed", "title": "Race · Main Effects · Pre ML", "subtitle": "Semantic Network", "variant": "Two groups (Humans and GenAI)"}, {"href": "race/soi/post-ML/raw_embedding_dimension_3072/05_semantic_threshold_network.html", "task": "race", "theory_type": "soi", "phase": "post-ML", "variant_key": "three_groups", "title": "Race · Interactions · Post ML", "subtitle": "Semantic Network", "variant": "Three groups (PhDs, Senior Scientists, GenAI)"}, {"href": "race/soi/post-ML/raw_embedding_dimension_3072/05_semantic_threshold_network_collapsed.html", "task": "race", "theory_type": "soi", "phase": "post-ML", "variant_key": "collapsed", "title": "Race · Interactions · Post ML", "subtitle": "Semantic Network", "variant": "Two groups (Humans and GenAI)"}, {"href": "race/soi/pre-ML/raw_embedding_dimension_3072/05_semantic_threshold_network.html", "task": "race", "theory_type": "soi", "phase": "pre-ML", "variant_key": "three_groups", "title": "Race · Interactions · Pre ML", "subtitle": "Semantic Network", "variant": "Three groups (PhDs, Senior Scientists, GenAI)"}, {"href": "race/soi/pre-ML/raw_embedding_dimension_3072/05_semantic_threshold_network_collapsed.html", "task": "race", "theory_type": "soi", "phase": "pre-ML", "variant_key": "collapsed", "title": "Race · Interactions · Pre ML", "subtitle": "Semantic Network", "variant": "Two groups (Humans and GenAI)"}]</script>
+  <script>(function () {
+  const TASK_ORDER = ["race", "gender"];
+  const TASK_LABELS = { gender: "Gender", race: "Race" };
+  const THEORY_ORDER = ["main-effects", "soi"];
+  const THEORY_LABELS = {
+    "main-effects": "Main Effects",
+    "soi": "Second-Order Interactions",
+  };
+  const PHASE_ORDER = ["pre-ML", "post-ML"];
+  const VARIANT_ORDER = ["three_groups", "collapsed"];
+  const VARIANT_LABELS = {
+    three_groups: "Three groups (PhDs, Senior Scientists, GenAI)",
+    collapsed: "Two groups (Humans and GenAI)",
+  };
+  const OPEN_SECTIONS_KEY = "network-sidebar-open-sections";
+
+  function navStorage() {
+    try {
+      return window.sessionStorage;
+    } catch {
+      return null;
+    }
+  }
+
+  function readOpenSections() {
+    const storage = navStorage();
+    if (!storage) return new Set();
+    try {
+      const raw = storage.getItem(OPEN_SECTIONS_KEY);
+      if (!raw) return new Set();
+      const parsed = JSON.parse(raw);
+      return new Set(Array.isArray(parsed) ? parsed : []);
+    } catch {
+      return new Set();
+    }
+  }
+
+  function writeOpenSections(openIds) {
+    const storage = navStorage();
+    if (!storage) return;
+    try {
+      storage.setItem(OPEN_SECTIONS_KEY, JSON.stringify([...openIds]));
+    } catch {
+      /* ignore quota / private browsing */
+    }
+  }
+
+  // Drop legacy persistence so reopening the site starts collapsed.
+  try {
+    localStorage.removeItem(OPEN_SECTIONS_KEY);
+  } catch {
+    /* ignore */
+  }
+
+  function sectionId(task, theory) {
+    return task + "/" + theory;
+  }
+
+  const PAGE_SUFFIX_RE =
+    /((?:gender|race)\/(?:main-effects|soi)\/(?:pre-ML|post-ML)\/[^/]+\/[^/]+?)(?:\.html)?$/i;
+
+  function normalizeNavPath(path) {
+    if (path == null) return "";
+    let p = decodeURIComponent(String(path)).trim();
+    if (p.includes("://")) {
+      try {
+        p = new URL(p).pathname;
+      } catch {
+        /* keep p */
+      }
+    }
+    const pageMatch = p.match(PAGE_SUFFIX_RE);
+    if (pageMatch) {
+      return pageMatch[1].toLowerCase();
+    }
+    const marker = "/network/";
+    const markerIndex = p.indexOf(marker);
+    if (markerIndex !== -1) {
+      p = p.slice(markerIndex + marker.length);
+    }
+    p = p.replace(/^\//, "").replace(/\/$/, "");
+    if (!p || p === "index" || p === "index.html" || !p.includes("/")) return "";
+    if (p.endsWith(".html")) p = p.slice(0, -5);
+    if (p === "index") return "";
+    return p.toLowerCase();
+  }
+
+  function resolvedPathFromHref(href) {
+    try {
+      return normalizeNavPath(new URL(href, window.location.href).pathname);
+    } catch {
+      return normalizeNavPath(href);
+    }
+  }
+
+  function currentResolvedPath() {
+    return normalizeNavPath(window.location.pathname);
+  }
+
+  function pathsMatch(itemHref) {
+    const entryPath = normalizeNavPath(itemHref);
+    const currentPath = currentResolvedPath();
+    if (entryPath === currentPath) return true;
+    try {
+      return resolvedPathFromHref(navLinkHref(itemHref)) === currentPath;
+    } catch {
+      return false;
+    }
+  }
+
+  /** Path to current page relative to the network site root (no leading slash). */
+  function networkPathSuffix() {
+    const path = decodeURIComponent(window.location.pathname);
+    const pageMatch = path.match(
+      /((?:gender|race)\/(?:main-effects|soi)\/(?:pre-ML|post-ML)\/[^/]+\/[^/]+\.html)$/i
+    );
+    if (pageMatch) return pageMatch[1];
+    const marker = "/network/";
+    const markerIndex = path.indexOf(marker);
+    if (markerIndex !== -1) {
+      const rest = path.slice(markerIndex + marker.length).replace(/\/$/, "");
+      return rest || "index.html";
+    }
+    if (/\/index\.html$/i.test(path) || /\/$/.test(path)) return "index.html";
+    return path.replace(/^\//, "").replace(/\/$/, "");
+  }
+
+  function currentNavPath() {
+    return currentResolvedPath();
+  }
+
+  function isHttpDeployment() {
+    const p = window.location.protocol;
+    return p === "http:" || p === "https:";
+  }
+
+  /**
+   * Host-absolute site root for http(s), e.g. "/human-ai-semantic-network" or "/network".
+   * Relative links break when the URL omits a trailing slash
+   * (/human-ai-semantic-network + "gender/..." => /gender/...).
+   */
+  function networkSiteRoot() {
+    if (!isHttpDeployment()) return null;
+
+    const scripts = document.getElementsByTagName("script");
+    for (let i = 0; i < scripts.length; i++) {
+      const src = scripts[i].src;
+      if (!src || !/sidebar\.js(\?|$)/i.test(src)) continue;
+      try {
+        const pathname = new URL(src, window.location.href).pathname;
+        return pathname.replace(/\/network_interactive\/sidebar\.js$/i, "") || "";
+      } catch {
+        /* keep looking */
+      }
+    }
+
+    const path = decodeURIComponent(window.location.pathname);
+    const underPage = path.match(
+      /^(.*)\/(?:gender|race)\/(?:main-effects|soi)\/(?:pre-ML|post-ML)\//i
+    );
+    if (underPage) return underPage[1];
+
+    let root = path.replace(/\/index\.html$/i, "").replace(/\/$/, "");
+    return root || "";
+  }
+
+  /** Build href for a catalog entry from the current page location. */
+  function navLinkHref(itemHref) {
+    const target = String(itemHref).replace(/^\//, "");
+    const root = networkSiteRoot();
+    if (root !== null) {
+      // Keep .html; project Pages need the real filename.
+      return (root ? root : "") + "/" + target;
+    }
+    // file:// — stay relative to the current document.
+    return navBasePrefix() + target;
+  }
+
+  function navBasePrefix() {
+    const suffix = networkPathSuffix();
+    if (!suffix || suffix === "index.html" || suffix === "index") return "";
+    const depth = suffix.split("/").filter(Boolean).length - 1;
+    return depth > 0 ? "../".repeat(depth) : "";
+  }
+
+  window.buildNetworkSidebar = function (entries, rootId, options) {
+    const opts = options || {};
+    const root = document.getElementById(rootId || "site-sidebar");
+    if (!root) return;
+    if (!entries || !entries.length) {
+      console.warn("buildNetworkSidebar: no catalog entries; sidebar links will be empty.");
+      entries = [];
+    }
+
+    const openSections = readOpenSections();
+
+    const tree = {};
+    entries.forEach((e) => {
+      if (!tree[e.task]) tree[e.task] = {};
+      if (!tree[e.task][e.theory_type]) tree[e.task][e.theory_type] = {};
+      if (!tree[e.task][e.theory_type][e.phase]) tree[e.task][e.theory_type][e.phase] = {};
+      tree[e.task][e.theory_type][e.phase][e.variant_key] = e;
+    });
+
+    const brand = document.createElement("div");
+    brand.className = "sidebar-brand";
+    const homeHref = navLinkHref("index.html");
+    brand.innerHTML =
+      '<a href="' + homeHref + '">' +
+      '<div class="eyebrow">Theory explanation space</div>' +
+      "<h1>Semantic Networks</h1></a>";
+    root.appendChild(brand);
+
+    const scroll = document.createElement("div");
+    scroll.className = "sidebar-scroll";
+
+    TASK_ORDER.forEach((task) => {
+      if (!tree[task]) return;
+      const taskEl = document.createElement("div");
+      taskEl.className = "nav-task " + task;
+      taskEl.innerHTML = '<h2 class="nav-task-title">' + TASK_LABELS[task] + "</h2>";
+      let taskHasActive = false;
+
+      THEORY_ORDER.forEach((theory) => {
+        if (!tree[task][theory]) return;
+        const details = document.createElement("details");
+        details.className = "nav-theory";
+        const summary = document.createElement("summary");
+        summary.textContent = THEORY_LABELS[theory];
+        details.appendChild(summary);
+        let sectionHasActive = false;
+
+        const sid = sectionId(task, theory);
+        if (opts.expandAll || openSections.has(sid)) {
+          details.open = true;
+        }
+
+        details.addEventListener("toggle", () => {
+          if (details.open) openSections.add(sid);
+          else openSections.delete(sid);
+          writeOpenSections(openSections);
+        });
+
+        const theoryBody = document.createElement("div");
+        theoryBody.className = "nav-theory-body";
+
+        PHASE_ORDER.forEach((phase) => {
+          const phaseEntries = tree[task][theory][phase];
+          if (!phaseEntries) return;
+
+          const phaseEl = document.createElement("div");
+          phaseEl.className = "nav-phase";
+          const phaseIsActive = VARIANT_ORDER.some((vk) => {
+            const item = phaseEntries[vk];
+            return item && pathsMatch(item.href);
+          });
+          if (phaseIsActive) phaseEl.classList.add("has-active");
+          phaseEl.innerHTML = '<div class="nav-phase-label">' + phase + "</div>";
+
+          const links = document.createElement("div");
+          links.className = "nav-links";
+
+          VARIANT_ORDER.forEach((vk) => {
+            const item = phaseEntries[vk];
+            if (!item) return;
+            const a = document.createElement("a");
+            a.href = navLinkHref(item.href);
+            a.textContent = VARIANT_LABELS[vk];
+            if (pathsMatch(item.href)) {
+              a.classList.add("active");
+              a.setAttribute("aria-current", "page");
+              sectionHasActive = true;
+              taskHasActive = true;
+            }
+            links.appendChild(a);
+          });
+
+          phaseEl.appendChild(links);
+          theoryBody.appendChild(phaseEl);
+        });
+
+        if (sectionHasActive) {
+          details.classList.add("has-active");
+          details.open = true;
+        }
+
+        details.appendChild(theoryBody);
+        taskEl.appendChild(details);
+      });
+
+      if (taskHasActive) taskEl.classList.add("has-active");
+      scroll.appendChild(taskEl);
+    });
+
+    root.appendChild(scroll);
+
+    const activeLink = root.querySelector(".nav-links a.active");
+    if (activeLink) {
+      requestAnimationFrame(() => {
+        activeLink.scrollIntoView({ block: "nearest", behavior: "auto" });
+      });
+    }
+  };
+})();
+</script>
+  <script>
+    buildNetworkSidebar(JSON.parse(document.getElementById("nav-data").textContent));
+
+    const DATA = JSON.parse(document.getElementById("network-data").textContent);
+    const SCALE = 1000;
+    const PANEL_PAD = 40;
+
+    document.getElementById("page-title").textContent = DATA.title;
+    document.getElementById("page-subtitle").textContent = DATA.subtitle;
+    document.getElementById("threshold-val").textContent = DATA.threshold.toFixed(3);
+    document.getElementById("quantile-val").textContent = DATA.threshold_quantile_pct + "th";
+    document.getElementById("variant-badge").textContent = DATA.collapsed
+      ? "Two groups (Humans and GenAI)"
+      : "Three groups (PhDs, Senior Scientists, GenAI)";
+
+    const panelsEl = document.getElementById("panels");
+    const detailEl = document.getElementById("detail");
+    const detailHeader = document.getElementById("detail-header");
+    const detailEmpty = document.getElementById("detail-empty");
+    const panelRoots = new Map();
+    let pinnedNode = null;
+    let hoveredNode = null;
+
+    function nodeRadius(degree) {
+      return 9.5 + Math.min(degree, 8) * 1.5;
+    }
+
+    function hitRadius(degree) {
+      return nodeRadius(degree) + 12;
+    }
+
+    function showDetail(node, panel) {
+      detailEmpty.style.display = "none";
+      detailEl.classList.add("visible");
+      detailHeader.style.setProperty("--detail-accent", panel.color);
+      document.getElementById("detail-dot").style.color = panel.color;
+      document.getElementById("detail-group").textContent = panel.title;
+      document.getElementById("detail-name").textContent = node.name;
+      document.getElementById("detail-neighbors").textContent = node.degree;
+      document.getElementById("detail-words").textContent = node.words ?? "—";
+      document.getElementById("detail-explanation").textContent =
+        node.explanation || "(No theory text available for this participant.)";
+    }
+
+    function hideDetail() {
+      if (pinnedNode) return;
+      detailEl.classList.remove("visible");
+      detailEmpty.style.display = "block";
+    }
+
+    function resetAllHighlights() {
+      panelRoots.forEach(root => {
+        root.selectAll(".node").classed("focused faded", false);
+        root.selectAll(".link").classed("highlight faded", false);
+      });
+      document.querySelectorAll(".panel-card").forEach(card => {
+        card.classList.remove("active");
+      });
+    }
+
+    function highlightNode(nodeId, panelId) {
+      resetAllHighlights();
+      const root = panelRoots.get(panelId);
+      const card = document.querySelector(`.panel-card[data-panel-id="${panelId}"]`);
+      if (!root || !card) return;
+
+      card.classList.add("active");
+      const neighborIds = new Set([nodeId]);
+      root.selectAll(".link").each(d => {
+        if (d.source === nodeId || d.target === nodeId) {
+          neighborIds.add(d.source);
+          neighborIds.add(d.target);
+        }
+      });
+
+      root.selectAll(".node")
+        .classed("focused", d => d.id === nodeId)
+        .classed("faded", d => !neighborIds.has(d.id));
+      root.selectAll(".link")
+        .classed("highlight", d => d.source === nodeId || d.target === nodeId)
+        .classed("faded", d => d.source !== nodeId && d.target !== nodeId);
+    }
+
+    function activateNode(node, panel) {
+      hoveredNode = node;
+      highlightNode(node.id, panel.id);
+      showDetail(node, panel);
+    }
+
+    function deactivateNode() {
+      if (pinnedNode) return;
+      hoveredNode = null;
+      hideDetail();
+      resetAllHighlights();
+    }
+
+    function addPanelGrid(svg, panelId) {
+      const patId = `grid-${panelId}`;
+      const defs = svg.append("defs");
+      defs.append("pattern")
+        .attr("id", patId)
+        .attr("width", 28).attr("height", 28)
+        .attr("patternUnits", "userSpaceOnUse")
+        .append("circle")
+        .attr("cx", 1).attr("cy", 1).attr("r", 0.55)
+        .attr("fill", "rgba(15,23,42,0.06)");
+      svg.insert("rect", ":first-child")
+        .attr("width", SCALE).attr("height", SCALE)
+        .attr("fill", `url(#${patId})`);
+    }
+
+    DATA.panels.forEach(panel => {
+      const nodeById = new Map(panel.nodes.map(n => [n.id, n]));
+
+      const card = document.createElement("div");
+      card.className = "panel-card";
+      card.dataset.panelId = panel.id;
+
+      const head = document.createElement("div");
+      head.className = "panel-head";
+      head.innerHTML = `<h2>${panel.title}</h2><span class="dot" style="color:${panel.color}"></span>`;
+      card.appendChild(head);
+
+      const svg = d3.select(card).append("svg")
+        .attr("class", "panel-svg")
+        .attr("viewBox", `0 0 ${SCALE} ${SCALE}`);
+
+      addPanelGrid(svg, panel.id.replace(/\W/g, "_"));
+      const root = svg.append("g");
+      panelRoots.set(panel.id, root);
+
+      const x = d3.scaleLinear().domain([0, 1]).range([PANEL_PAD, SCALE - PANEL_PAD]);
+      const y = d3.scaleLinear().domain([0, 1]).range([SCALE - PANEL_PAD, PANEL_PAD]);
+
+      const links = panel.links.map(l => ({ ...l, panelId: panel.id }));
+      const nodes = panel.nodes.map(n => ({ ...n, panelId: panel.id }));
+
+      root.selectAll(".link")
+        .data(links)
+        .join("line")
+        .attr("class", "link")
+        .attr("stroke-opacity", 0.34)
+        .attr("stroke-width", 1.2)
+        .attr("x1", d => x(nodeById.get(d.source).x))
+        .attr("y1", d => y(nodeById.get(d.source).y))
+        .attr("x2", d => x(nodeById.get(d.target).x))
+        .attr("y2", d => y(nodeById.get(d.target).y));
+
+      const nodeSel = root.selectAll(".node")
+        .data(nodes)
+        .join("g")
+        .attr("class", "node")
+        .attr("transform", d => `translate(${x(d.x)},${y(d.y)})`);
+
+      nodeSel.append("circle")
+        .attr("class", "hit")
+        .attr("r", d => hitRadius(d.degree));
+
+      nodeSel.append("circle")
+        .attr("class", "shell")
+        .attr("r", d => nodeRadius(d.degree) + 4)
+        .attr("stroke", panel.color)
+        .attr("stroke-opacity", 0.35);
+
+      nodeSel.append("circle")
+        .attr("class", "core")
+        .attr("r", d => nodeRadius(d.degree))
+        .attr("fill", panel.color)
+        .attr("fill-opacity", 0.92);
+
+      nodeSel
+        .on("pointerenter", (event, d) => {
+          if (pinnedNode && pinnedNode.id !== d.id) return;
+          activateNode(d, panel);
+        })
+        .on("pointerleave", (event) => {
+          if (pinnedNode) return;
+          const related = event.relatedTarget;
+          if (related && event.currentTarget.contains(related)) return;
+          deactivateNode();
+        })
+        .on("click", (event, d) => {
+          event.stopPropagation();
+          if (pinnedNode && pinnedNode.id === d.id) {
+            pinnedNode = null;
+            deactivateNode();
+            return;
+          }
+          pinnedNode = d;
+          activateNode(d, panel);
+        });
+
+      panelsEl.appendChild(card);
+    });
+
+    document.getElementById("search").addEventListener("input", (e) => {
+      const q = e.target.value.trim().toLowerCase();
+      panelRoots.forEach(root => {
+        root.selectAll(".node").classed("faded", d => q && !d.name.toLowerCase().includes(q));
+        if (!q) root.selectAll(".link").classed("faded highlight", false);
+        else root.selectAll(".link").classed("faded", true).classed("highlight", false);
+      });
+      if (!q && !pinnedNode && !hoveredNode) resetAllHighlights();
+      else if (pinnedNode) highlightNode(pinnedNode.id, pinnedNode.panelId);
+      else if (hoveredNode) highlightNode(hoveredNode.id, hoveredNode.panelId);
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape") return;
+      pinnedNode = null;
+      hoveredNode = null;
+      document.getElementById("search").value = "";
+      hideDetail();
+      resetAllHighlights();
+      panelRoots.forEach(root => {
+        root.selectAll(".node").classed("faded", false);
+      });
+    });
+
+    document.getElementById("canvas-wrap").addEventListener("click", (e) => {
+      if (e.target.closest(".node")) return;
+      if (!pinnedNode) return;
+      pinnedNode = null;
+      hoveredNode = null;
+      hideDetail();
+      resetAllHighlights();
+    });
+  </script>
+</body>
+</html>

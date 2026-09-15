@@ -1,0 +1,54 @@
+{
+    "race": [
+        {
+            "rank": 1,
+            "feature_1": "social_science",
+            "feature_2": "paper_inequality_mentions_3_years",
+            "sign": "+",
+            "feature_importance": 0.151,
+            "votes": 1000
+        },
+        {
+            "rank": 2,
+            "feature_1": "social_science",
+            "feature_2": "news_inequality_mentions_3_years",
+            "sign": "+",
+            "feature_importance": 0.145,
+            "votes": 1000
+        },
+        {
+            "rank": 3,
+            "feature_1": "female",
+            "feature_2": "social_science",
+            "sign": "-",
+            "feature_importance": 0.114,
+            "votes": 1000
+        }
+    ],
+    "gender": [
+        {
+            "rank": 1,
+            "feature_1": "social_science",
+            "feature_2": "paper_inequality_mentions_3_years",
+            "sign": "+",
+            "feature_importance": 0.179,
+            "votes": 1000
+        },
+        {
+            "rank": 2,
+            "feature_1": "social_science",
+            "feature_2": "news_inequality_mentions_3_years",
+            "sign": "+",
+            "feature_importance": 0.173,
+            "votes": 1000
+        },
+        {
+            "rank": 3,
+            "feature_1": "female",
+            "feature_2": "social_science",
+            "sign": "-",
+            "feature_importance": 0.143,
+            "votes": 1000
+        }
+    ]
+}
