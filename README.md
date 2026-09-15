@@ -24,35 +24,87 @@ We recommend using an isolated virtual environment so these packages do not inte
 
 ## survey-analysis
 
-This folder analyzes the survey responses from humans and GenAI systems on predicting racial and gender inequality in academic discourses. The survey data is in `[anonymous_survey_data.csv](survey-analysis/anonymous_survey_data.csv)`. Column definitions are in `[anonymous_survey_data_codebook.md](survey-analysis/anonymous_survey_data_codebook.md)`.
+This folder analyzes the survey responses from humans and GenAI systems on predicting racial and gender inequality in academic discourses. The survey data is in [`anonymous_survey_data.csv`](survey-analysis/anonymous_survey_data.csv). Column definitions are in [`anonymous_survey_data_codebook.md`](survey-analysis/anonymous_survey_data_codebook.md).
 
-To reproduce **Fig. 1**, run `survey-analysis/forecasts/fig_sorted_individuals.py`.
+To reproduce **Fig. 1**, run:
 
-To reproduce **Fig. 2**, run `survey-analysis/forecasts/fig_equal_size_aggregation.py`.
+```bash
+python survey-analysis/forecasts/fig_sorted_individuals.py
+```
 
-To reproduce **Fig. 3**, run `survey-analysis/textual_analysis/embedding_analysis/fig_semantic_space_map_PCA.py`.
+To reproduce **Fig. 2**, run:
 
-To reproduce **Fig. 4**, run `survey-analysis/textual_analysis/embedding_analysis/fig_within_group_dispersion.py`.
+```bash
+python survey-analysis/forecasts/fig_equal_size_aggregation.py
+```
 
-To reproduce **Fig. 5**, run `survey-analysis/textual_analysis/embedding_analysis/fig_theory_revision.py`.
+To reproduce **Fig. 3**, run:
 
-To reproduce **Extended Data Table 1**, run `survey-analysis/forecasts/fig_accuracy_tables_all.py`.
+```bash
+python survey-analysis/textual_analysis/embedding_analysis/fig_semantic_space_map_PCA.py
+```
 
-To reproduce **Extended Data Table 2**, run `survey-analysis/forecasts/fig_forecast_diversity.py`.
+To reproduce **Fig. 4**, run:
 
-To reproduce **Extended Data Table 3**, run `survey-analysis/moderator_analysis/moderator_regression.py`.
+```bash
+python survey-analysis/textual_analysis/embedding_analysis/fig_within_group_dispersion.py
+```
 
-To reproduce **Extended Data Table 4**, run `survey-analysis/diagram/fig_theory_complexity.py`.
+To reproduce **Fig. 5**, run:
 
-To reproduce **Extended Data Fig. 4**, run `survey-analysis/forecasts/fig_feature_selection_frequency.py`.
+```bash
+python survey-analysis/textual_analysis/embedding_analysis/fig_theory_revision.py
+```
 
-To reproduce **Extended Data Fig. 5**, run `survey-analysis/textual_analysis/embedding_analysis/fig_core_tail_structure.py`.
+To reproduce **Extended Data Table 1**, run:
 
-To reproduce **Extended Data Fig. 6**, run `survey-analysis/textual_analysis/theory_quality_rating/fig_theory_rating_quality.py`.
+```bash
+python survey-analysis/forecasts/fig_accuracy_tables_all.py
+```
+
+To reproduce **Extended Data Table 2**, run:
+
+```bash
+python survey-analysis/forecasts/fig_forecast_diversity.py
+```
+
+To reproduce **Extended Data Table 3**, run:
+
+```bash
+python survey-analysis/moderator_analysis/moderator_regression.py
+```
+
+To reproduce **Extended Data Table 4**, run:
+
+```bash
+python survey-analysis/diagram/fig_theory_complexity.py
+```
+
+To reproduce **Extended Data Fig. 4**, run:
+
+```bash
+python survey-analysis/forecasts/fig_feature_selection_frequency.py
+```
+
+To reproduce **Extended Data Fig. 5**, run:
+
+```bash
+python survey-analysis/textual_analysis/embedding_analysis/fig_core_tail_structure.py
+```
+
+To reproduce **Extended Data Fig. 6**, run:
+
+```bash
+python survey-analysis/textual_analysis/theory_quality_rating/fig_theory_rating_quality.py
+```
 
 ## machine-learning-analysis
 
-To reproduce **Extended Data Fig. 2** and **Extended Data Fig. 3** in the paper, run `machine-learning-analysis/code/plot_ML_results_by_domain.py`.
+To reproduce **Extended Data Fig. 2** and **Extended Data Fig. 3** in the paper, run:
+
+```bash
+python machine-learning-analysis/code/plot_ML_results_by_domain.py
+```
 
 Precomputed random forest and logistic regression results are already stored under `machine-learning-analysis/models/`. The plotting script reads those files and regenerates the figures—no re-training needed.
 
