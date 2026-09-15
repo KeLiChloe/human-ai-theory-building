@@ -25,7 +25,7 @@ We recommend using an isolated virtual environment so these packages do not inte
 
 ## survey-analysis
 
-This folder analyzes the survey responses from humans and GenAI systems on predicting racial and gender inequality in academic discourses. Column definitions for the survey file: `[anonymous_survey_data_codebook.md](survey-analysis/anonymous_survey_data_codebook.md)`.
+This folder analyzes the survey responses from humans and GenAI systems on predicting racial and gender inequality in academic discourses. Column definitions for the survey file: [`anonymous_survey_data_codebook.md`](survey-analysis/anonymous_survey_data_codebook.md).
 
 To reproduce **Fig. 1**, run `survey-analysis/forecasts/fig_sorted_individuals.py`.
 
@@ -41,11 +41,11 @@ To reproduce **Extended Data Table 1**, run `survey-analysis/forecasts/fig_accur
 
 To reproduce **Extended Data Table 2**, run `survey-analysis/forecasts/fig_forecast_diversity.py`.
 
-To reproduce **Extended Data Fig. 4**, run `survey-analysis/forecasts/fig_feature_selection_frequency.py`.
-
 To reproduce **Extended Data Table 3**, run `survey-analysis/moderator_analysis/moderator_regression.py`.
 
 To reproduce **Extended Data Table 4**, run `survey-analysis/diagram/fig_theory_complexity.py`.
+
+To reproduce **Extended Data Fig. 4**, run `survey-analysis/forecasts/fig_feature_selection_frequency.py`.
 
 To reproduce **Extended Data Fig. 5**, run `survey-analysis/textual_analysis/embedding_analysis/fig_core_tail_structure.py`.
 

@@ -29,6 +29,8 @@ survey-analysis/textual_analysis/causal_claim_analysis
 survey-analysis/textual_analysis/integrate_pre_and_post
 survey-analysis/textual_analysis/embedding_analysis/outputs/**/*.tex
 survey-analysis/rating_system
+# Interactive network HTML + render assets (not used by paper figure scripts)
+survey-analysis/textual_analysis/embedding_analysis/network/
 
 # OS / editor
 .DS_Store
