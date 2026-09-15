@@ -20,7 +20,7 @@ This code was developed and tested on macOS. For any questions about the code, p
    pip install -r requirements.txt
   ```
 
-We recommend using an isolated virtual environment so these packages do not interfere with other Python projects on your computer. On macOS/Linux, if `pip` is not found, try `pip3` instead.
+We recommend using an isolated virtual environment so these packages do not interfere with other Python projects on your computer. 
 
 ## survey-analysis
 
