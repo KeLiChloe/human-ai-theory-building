@@ -533,8 +533,10 @@ def main():
     )
     args = parser.parse_args()
 
-    base = Path("models")
-    outdir = Path("figures")
+    # Anchor to package root so cwd does not matter (any clone / any machine).
+    root = Path(__file__).resolve().parent.parent
+    base = root / "models"
+    outdir = root / "figures"
     specs = _domain_specs(base)
     domains = ["race", "gender"] if args.domain == "both" else [args.domain]
 
