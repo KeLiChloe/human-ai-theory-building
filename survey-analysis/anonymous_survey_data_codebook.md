@@ -146,7 +146,6 @@ IDs → Race main-effect select/rank/sign → Race pre-ML main-effect theory/dia
     → Race post-ML SOI reaction/theory
     → Race proposed empirical tests
 → same sequence for Gender
-→ topic_expert
 ```
 
 ---
