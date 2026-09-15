@@ -11,23 +11,20 @@ This code was developed and tested on macOS. For any questions about the code, p
 
 1. Install [Python 3](https://www.python.org/downloads/) if you do not have it yet.
 2. Clone this repository and enter the project folder:
-
-```bash
-git clone https://github.com/KeLiChloe/human-ai-theory-building.git
-cd human-ai-theory-building
-```
-
-1. Install the packages:
-
-```bash
-pip install -r requirements.txt
-```
+  ```bash
+   git clone https://github.com/KeLiChloe/human-ai-theory-building.git
+   cd human-ai-theory-building
+  ```
+3. Install the packages:
+  ```bash
+   pip install -r requirements.txt
+  ```
 
 We recommend using an isolated virtual environment so these packages do not interfere with other Python projects on your computer. On macOS/Linux, if `pip` is not found, try `pip3` instead.
 
 ## survey-analysis
 
-This folder analyzes the survey responses from humans and GenAI systems on predicting racial and gender inequality in academic discourses. Column definitions for the survey file: [`anonymous_survey_data_codebook.md`](survey-analysis/anonymous_survey_data_codebook.md).
+This folder analyzes the survey responses from humans and GenAI systems on predicting racial and gender inequality in academic discourses. The survey data is in `[anonymous_survey_data.csv](survey-analysis/anonymous_survey_data.csv)`. Column definitions are in `[anonymous_survey_data_codebook.md](survey-analysis/anonymous_survey_data_codebook.md)`.
 
 To reproduce **Fig. 1**, run `survey-analysis/forecasts/fig_sorted_individuals.py`.
 
