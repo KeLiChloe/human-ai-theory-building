@@ -1,0 +1,46 @@
+# Shared virtualenv (repo root)
+.venv/
+
+# Python caches (auto-regenerated; safe to delete anytime)
+**/__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# --- machine-learning-analysis ---
+machine-learning-analysis/archive/
+machine-learning-analysis/data/database/
+machine-learning-analysis/data/gender_ineq_dataset.csv
+machine-learning-analysis/data/race_ineq_dataset.csv
+machine-learning-analysis/code/preprocessing/
+machine-learning-analysis/.mplconfig/
+machine-learning-analysis/.cache/
+machine-learning-analysis/.Rhistory
+
+# --- survey-analysis ---
+survey-analysis/.cache/
+survey-analysis/.mplconfig/
+survey-analysis/**/.mplconfig/
+survey-analysis/**/.numba_cache/
+survey-analysis/textual_analysis/causal_claim_analysis
+survey-analysis/textual_analysis/integrate_pre_and_post
+survey-analysis/textual_analysis/embedding_analysis/outputs/**/*.tex
+survey-analysis/rating_system
+# Interactive network HTML + render assets (not used by paper figure scripts)
+survey-analysis/textual_analysis/embedding_analysis/network/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Secrets / local env
+.env
+.env.*
+!.env.example
+
+# Local identifiable backups (do not publish)
+.private_backup/

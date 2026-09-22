@@ -1,0 +1,112 @@
+{
+    "general": {
+        "-1":[
+            "unfair", "unfairnes", "inequality", "inequalities", "privilege", "privileges", 
+            "disadvantage", "disadvantages", "disadvantaged", "discrimination",
+            "unequal", "advantaged", "mistreatment", "oppression", "bias", "biases", 
+            "injustice", "social exclusion", "social exclusions","disparity", "disparities"
+        ],
+    
+        "1":["fairness", "justice", "equality", "equalities", "social equality","social equalities"],
+        "0":[]
+    },
+    "economic": {
+        "-1":[ 
+            "high class", "high classes", "low class", "low classes", "lower class", "lower classes", 
+            "unequal wealth", "low income", "middle class", "middle classes", "upper class",  "upper classes",
+            "unemployment", "income gap", "income gaps", "pay inequality","pay inequalities", 
+            "class division", "class divisions", "inheritance gap", "inheritance gaps", "pay divide", 
+            "wealth distribution", "wealth distributions", "wealth disparity", "wealth disparities", 
+            "unequal income", "income disparity", "income disparities", 
+            "poor", "poverty", "wage inequality", "wage inequalities",
+            "wage divide",  "economic inequality", "economic inequalities",
+            "unequal wage", "unequal wages", "impoverished", "income inequality", "income inequalities",
+            "economic disparity", "economic disparities", "wealth gap", "wealth gaps",
+            "wealth difference", "wealth differences", "economic divide", 
+            "wage disparity", "wage disparities", "wage difference", "wage differences",
+            "income difference", "income differences", "wealth inequality", "wealth inequalities", 
+            "wealth divide", "rich", "economic opportunity gap", "economic opportunity gaps", 
+            "class inequality","class inequalities", "wage gap","wage gaps",
+            "financial divide", "pay gap", "pay gaps","class disparity",  "class disparities",
+            "socioeconomic status"
+        ],
+        
+
+        "1": [
+            "equal wage", "equal wages", "economic equality", "economic equalities",
+            "equal income", "wealth redistribution", 
+            "redistribution of wealth", "equitable income", "wage equality", "wage equalities", 
+            "income equality", "income equalities"
+        ],
+
+        "0":["income", "pay", "money", "wages", "funds", "economic", "cash", "finances", "wealth"]
+
+    },
+    "gender": {
+        "-1":[
+            "marginalize women", "marginalization of women", "sexual discrimination", "sex discrimination", 
+            "gender discrimination", "gender stereotypes", "gender stereotyping", "sex stereotypes", "sex stereotyping",
+            "male dominance", "male dominated", "female subordination", 
+            "gendered division of labor", "gender wage gap", "gender wage gaps", "gender bias", "gender biases", 
+            "female underrepresentation", "underrepresentation of female", 
+            "women underrepresentation", "underrepresentation of women",
+            "gender disparity", "gender disparities", "sex disparity", "sex disparities", 
+            "gender norm", "gender norms", "sexism",  "sexist", "sexists", 
+            "patriarchy", "sex bias", "sex biases", "gender pay gap", "gender pay gaps", 
+            "gender income gap", "gender income gaps", 
+            "gendered expectation", "gendered expectations", "gender-based violence", 
+            "objectification", "pink tax", "mansplaining","manterrupting", "gender-based harassment"
+
+        ],
+    
+        "1":[
+            "gender identity", "women’s rights", "gender diversity", "gender balance", "feminism", "women empowerment", "feminist",
+            "LGBTQ", "gender equality","equal pay", "equal rights"
+        ],
+    
+        "0":[
+            "gender", "genders", "sex roles", "gender roles", "female and male", "women and men", "sexes"
+        ]
+    
+    },
+
+    "race": {
+        "-1":[
+            "racial bias", "racial biases", "racial inequality", "racial inequalities", "racial injustice", 
+            "racial discrimination", "racial stigma", "racial wealth gap", "racial wealth gaps",
+            "racial disparity", "racial disparities", "racial exclusion", "racial exclusions", 
+            "racism", "racial income", "racial oppression", "racial privilege", "racial privileges",
+            "racial profiling", "racial stereotype", "racial stereotypes", "racial stereotyping", 
+            "racial hierarchy", "racial violence", "racial minority", 
+            "racial tension", "racial segregation", "racial intolerance",  "racial scapegoating", 
+            "prejudice", "colorism", "white privilege", "xenophobia", "hate speech", "hate crimes",
+            "racial microaggression", "racial microaggressions"
+        ],
+    
+        "1":[
+            "racial diversity", "racial equality","racial equalities", "racial justice", 
+            "minority representation", "representation of minority", "racial equity", "anti-racism", 
+            "anti-racist", "racial inclusion"
+        ],
+    
+        "0":[
+            "ethnicity", "ethnic groups", "race", "ethnic identity", "racial identity", "racial", "people of color",
+            "communities of color",  "racial groups", "racial demographics"
+        ]
+    },
+    "susceptibility": {  
+        "-1":[
+            "unvarying", "unalterable", "unshakeable", "unyielding", "invariant", "steadfast", "established", 
+            "invariable", "steady", "firm", "inflexible", "consistent", "persisting", "immovable", "immobile", 
+            "unmodifiable", "permanent", "unfluctuating", "stationary", "enduring", "unchanging", "unwavering", 
+            "fixed", "reliable", "lasting", "unchanged", "solid", "constant", "stable", "unchangeable", "rigid"
+        ],
+        "1":[
+            "change", "changes", "shift", "shifts", "transform", "shifting", "varying", "alterable", "dynamic", 
+            "fluid", "changeable", "changeability", "progress", "modifiable", "fluctuating", "variable"
+        ],
+        "0":[]
+
+    }
+
+}
