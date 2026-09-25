@@ -3,7 +3,7 @@
 The survey has two parallel tasks—**racial inequality** (`Q Race.`) and **gender inequality** *(*`Q Gender.`)—with the same structure. Question IDs in this file (e.g. `Q Race.1`, `Q Gender.12`) match the items in the paper appendix Survey contents.
 
 One row = one survey respondent (human or GenAI system).  
-**98 rows × 117 columns.** Demographic identifiers have been removed; human names are replaced by anonymous `Participant ID` codes.
+**98 rows × 118 columns.** Identifying fields have been removed; human names are replaced by anonymous `Participant ID` codes.
 
 
 | Source                   | Meaning                                                                          |
@@ -24,6 +24,7 @@ One row = one survey respondent (human or GenAI system).
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------- |
 | `student_0, senior_1, genAI_2` | Respondent type. `0` = PhD student; `1` = senior scientist; `2` = GenAI model.                                                                         | Raw                  |
 | `Participant ID`               | Anonymous ID. Humans: `phd_contributor_<code>` or `senior_contributor_<code>`. GenAI: model display name (e.g. GPT / Claude / Theorista style labels). | Coded by author team |
+| `gender`                       | Coded self-reported gender. `Female` / `Male` / `Other` (non-binary or prefer not to disclose) / `-1` = N/A (GenAI). Used for moderator analyses.     | Coded by author team |
 | `topic_expert`                 | Human topic expertise flag. `1` = topic expert; `0` = human non-expert; `-1` = N/A (GenAI).                                                            | Coded by author team |
 
 
