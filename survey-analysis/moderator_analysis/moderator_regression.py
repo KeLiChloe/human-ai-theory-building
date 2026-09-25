@@ -4,7 +4,7 @@ Q8 moderator analysis: forecasting accuracy by forecaster gender, expert, and se
 Sample: all human forecasters (PhD students + senior scientists), n = 73.
 
 Naming (do not conflate):
-  - Expert: topic publications — ≥1 peer-reviewed article on racial or gender inequality.
+  - Expert: coded ``topic_expert`` (1 = ≥1 inequality-related topic publication).
   - Senior: job rank — Senior Scientist (group id 1) vs PhD Student (group id 0).
 
 Produces a moderator results table PDF in moderator_analysis/outputs/.
@@ -26,7 +26,7 @@ from pathlib import Path
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.stats import spearmanr, t as t_dist
+from scipy.stats import t as t_dist
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 ROOT = SCRIPT_DIR.parent
@@ -142,25 +142,8 @@ class HumanRecord:
     cos_gender: float
     is_female: bool
     is_male: bool
-    race_pub_count: float
-    gender_pub_count: float
     is_senior: bool
     is_expert: bool  # topic_expert==1 (human-only; -1=GenAI N/A, ignored)
-
-    @property
-    def race_background(self) -> bool:
-        return self.race_pub_count > 0
-
-    @property
-    def gender_background(self) -> bool:
-        return self.gender_pub_count > 0
-
-
-def parse_pub_count(cell: str) -> float:
-    s = cell.strip()
-    if s and s.replace(".", "", 1).isdigit():
-        return float(s)
-    return 0.0
 
 
 def cosine_sim(a: np.ndarray, b: np.ndarray) -> float:
@@ -190,23 +173,37 @@ def _load_csv() -> tuple[list[str], list[list[str]]]:
     return rows[0], rows[1:]
 
 
+def _find_col(headers: list[str], *predicates) -> int | None:
+    """Return first header index matching any predicate, else None."""
+    for pred in predicates:
+        for i, h in enumerate(headers):
+            if pred(h):
+                return i
+    return None
+
+
 def _demographic_cols(headers: list[str]) -> dict[str, int]:
+    """Column indices for moderators (``gender``, ``topic_expert``, group id)."""
+    gender = _find_col(
+        headers,
+        lambda h: h.strip() == "gender",
+        lambda h: h == "What is your gender? - Selected Choice",
+    )
+    if gender is None:
+        raise KeyError(
+            "Missing gender column: expected coded 'gender' "
+            "or Qualtrics 'What is your gender? - Selected Choice'"
+        )
+    topic_expert = _find_col(headers, lambda h: h.strip() == "topic_expert")
+    if topic_expert is None:
+        raise KeyError("Missing topic_expert column")
+    senior = _find_col(headers, lambda h: "senior_1" in h)
+    if senior is None:
+        raise KeyError("Missing group column containing 'senior_1'")
     return {
-        "senior": next(i for i, h in enumerate(headers) if "senior_1" in h),
-        "gender": next(i for i, h in enumerate(headers) if h == "What is your gender? - Selected Choice"),
-        "topic_expert": next(i for i, h in enumerate(headers) if h.strip() == "topic_expert"),
-        "race_pub": next(
-            i for i, h in enumerate(headers)
-            if h.startswith(
-                "Approximately how many peer-reviewed academic articles have you published on topics related to racial inequality"
-            )
-        ),
-        "gender_pub": next(
-            i for i, h in enumerate(headers)
-            if h.startswith(
-                "Approximately how many peer-reviewed academic articles have you published on topics related to gender inequality"
-            )
-        ),
+        "senior": senior,
+        "gender": gender,
+        "topic_expert": topic_expert,
     }
 
 
@@ -223,8 +220,6 @@ def _human_record_from_row(
         cos_gender=cos_gender,
         is_female=(gender == "Female"),
         is_male=(gender == "Male"),
-        race_pub_count=parse_pub_count(row[cols["race_pub"]]),
-        gender_pub_count=parse_pub_count(row[cols["gender_pub"]]),
         is_senior=(gid == "1"),
         is_expert=(row[cols["topic_expert"]].strip() == "1"),
     )
@@ -841,32 +836,6 @@ def collect_results(records: list[HumanRecord], *, analysis: str) -> list[dict]:
                 "mean_high": stats["coef"],
                 "mean_low": stats["se"],
                 "welch_p_two_sided": stats["p"],
-            })
-
-        for pub_key, pub_label in [
-            ("race_pub_count", "race publication count"),
-            ("gender_pub_count", "gender publication count"),
-        ]:
-            acc_vals, pub_vals = [], []
-            for r in records:
-                acc = getattr(r, acc_key)
-                if np.isnan(acc):
-                    continue
-                acc_vals.append(acc)
-                pub_vals.append(getattr(r, pub_key))
-            rho, p_sp = spearmanr(acc_vals, pub_vals)
-            rows.append({
-                "analysis": analysis,
-                "prereg_q8": False,
-                "task": task_label,
-                "moderator": f"Spearman: {pub_label}",
-                "group_high": "",
-                "group_low": "",
-                "n_high": "",
-                "n_low": len(acc_vals),
-                "mean_high": float(rho),
-                "mean_low": np.nan,
-                "welch_p_two_sided": float(p_sp),
             })
     return rows
 
