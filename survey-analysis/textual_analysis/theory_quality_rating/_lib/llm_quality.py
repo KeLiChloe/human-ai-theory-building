@@ -391,7 +391,7 @@ def _draw_panel(
             phase_comp_pvals[phase].append(p_val)
 
     ax.set_xticks(x)
-    ax.set_xticklabels([display_label(g) for g in group_order], fontsize=10)
+    ax.set_xticklabels([display_label(g) for g in group_order], fontsize=12)
     if title:
         ax.set_title(title, fontsize=13, pad=8)
     else:
@@ -399,9 +399,9 @@ def _draw_panel(
     set_axis_labels(ax, None, None, bold_xticks=True)
     style_axes(ax)
     ax.tick_params(axis="y", labelsize=14.5)
-    ax.tick_params(axis="x", labelsize=10)
+    ax.tick_params(axis="x", labelsize=12)
     for label in ax.get_xticklabels():
-        label.set_fontsize(10)
+        label.set_fontsize(12)
         label.set_fontweight("bold")
     ax.set_ylim(0, ASSESSMENT_PLOT_YMAX)
     ax.set_yticks(list(range(0, ASSESSMENT_SCORE_YMAX + 1, 2)))

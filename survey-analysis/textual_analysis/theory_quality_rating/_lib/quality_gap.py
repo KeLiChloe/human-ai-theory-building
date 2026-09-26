@@ -85,7 +85,7 @@ NOTE_FONTSIZE = 10.0
 MODEL = "gpt-5.5"
 PANEL_LR_NOTE = "(left: LLM evaluator; right: human evaluators)"
 SECTION_LABEL_GAP = 0.024
-PANEL_TITLE_FONTSIZE = 16
+PANEL_TITLE_FONTSIZE = 19
 NAME_COL = "Participant ID"
 DIMS = [
     "clarity_coherence",
@@ -369,8 +369,8 @@ def main() -> None:
     axes_bars = np.array([fig.add_subplot(gs[1, 0]), fig.add_subplot(gs[1, 1])])
     axes_dist = np.array([fig.add_subplot(gs[2, 0]), fig.add_subplot(gs[2, 1])])
 
-    legend_kw_bars = _legend_kw(fontsize=7.5, borderpad=0.3, handletextpad=0.25)
-    legend_kw_dist = _legend_kw(fontsize=9.0, borderpad=0.4, handletextpad=0.35)
+    legend_kw_bars = _legend_kw(fontsize=9.0, borderpad=0.35, handletextpad=0.3)
+    legend_kw_dist = _legend_kw(fontsize=12.0, borderpad=0.45, handletextpad=0.4)
 
     corr_plot._draw_scatter_panel(
         ax_corr,
@@ -379,19 +379,27 @@ def main() -> None:
         llm_display=None,
         show_ylabel=True,
         marker_size=26,
-        corr_fontsize=11.5,
+        corr_fontsize=16.0,
         axis_label_fontsize=12,
         square_aspect=True,
     )
-    corr_handles = corr_plot._legend_handles(contributor_label=CONTRIBUTOR_LABEL)
+    corr_n = {
+        g: int(corr_plot._scatter_mask(corr_df, g).sum())
+        for g in corr_plot.GROUP_ORDER_COLLAPSED
+    }
+    corr_handles = corr_plot._legend_handles(
+        contributor_label=CONTRIBUTOR_LABEL,
+        n_by_group=corr_n,
+    )
     corr_legend = ax_corr.legend(
         corr_handles,
         [h.get_label() for h in corr_handles],
         loc="upper left",
-        fontsize=9.5,
-        borderpad=0.4,
-        handletextpad=0.4,
-        labelspacing=0.4,
+        fontsize=12.0,
+        markerscale=1.25,
+        borderpad=0.45,
+        handletextpad=0.45,
+        labelspacing=0.45,
         **_legend_kw(),
     )
     _style_legend_frame(corr_legend)
@@ -408,7 +416,7 @@ def main() -> None:
         note_fontsize=NOTE_FONTSIZE,
         notes_layout="sig_color_pvals",
         sig_text_color="black",
-        sig_legend_fontsize=8.0,
+        sig_legend_fontsize=9.0,
     )
     he._draw_panel(
         axes_bars[1],
@@ -420,7 +428,7 @@ def main() -> None:
         note_fontsize=NOTE_FONTSIZE,
         notes_layout="sig_color_pvals",
         sig_text_color="black",
-        sig_legend_fontsize=8.0,
+        sig_legend_fontsize=9.0,
     )
     axes_bars[0].set_ylabel("Quality score (mean ± 95% CI)", fontsize=12)
     axes_bars[1].set_ylabel("")

@@ -282,22 +282,29 @@ def _draw_scatter_panel(
     ax.tick_params(axis="y", labelleft=True)
 
 
-def _legend_handles(contributor_label=display_label) -> list:
-    group_handles = [
-        Line2D(
-            [0],
-            [0],
-            marker="o",
-            color="none",
-            markerfacecolor=SCATTER_COLORS[g],
-            markeredgecolor="white",
-            markeredgewidth=0.35,
-            markersize=8.5,
-            alpha=BAR_ALPHA,
-            label=contributor_label(g),
+def _legend_handles(
+    contributor_label=display_label,
+    n_by_group: dict[str, int] | None = None,
+) -> list:
+    group_handles = []
+    for g in GROUP_ORDER_COLLAPSED:
+        label = contributor_label(g)
+        if n_by_group is not None and g in n_by_group:
+            label = f"{label} (n={int(n_by_group[g])})"
+        group_handles.append(
+            Line2D(
+                [0],
+                [0],
+                marker="o",
+                color="none",
+                markerfacecolor=SCATTER_COLORS[g],
+                markeredgecolor="white",
+                markeredgewidth=0.35,
+                markersize=8.5,
+                alpha=BAR_ALPHA,
+                label=label,
+            )
         )
-        for g in GROUP_ORDER_COLLAPSED
-    ]
     line_handles = [
         Line2D([0], [0], color="#333333", lw=1.25, label="OLS fit"),
         Line2D(
