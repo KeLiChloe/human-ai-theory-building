@@ -1,6 +1,6 @@
 # human-ai-theory-building
 
-Code accompanying the paper *AI Theory Building: Artificial intelligences and human scientists exhibit complementary strengths in theory building*.
+Code accompanying the paper *[Artificial intelligences and human scientists exhibit complementary strengths in theory building](https://arxiv.org/abs/2306.12860)*.
 
 - **survey-analysis** — Analysis of the collected survey data.
 - **machine-learning-analysis** — Random Forest and logistic regression code for predicting inequality mentions in academic discourses.
@@ -24,7 +24,7 @@ We recommend using an isolated virtual environment so these packages do not inte
 
 ## survey-analysis
 
-This folder analyzes the survey responses from humans and GenAI systems on predicting racial and gender inequality in academic discourses. The survey data is in [`anonymous_survey_data.csv`](survey-analysis/anonymous_survey_data.csv). Column definitions are in [`anonymous_survey_data_codebook.md`](survey-analysis/anonymous_survey_data_codebook.md).
+This folder analyzes the survey responses from humans and GenAI systems on predicting racial and gender inequality in academic discourses. The survey data is in `[anonymous_survey_data.csv](survey-analysis/anonymous_survey_data.csv)`. Column definitions are in `[anonymous_survey_data_codebook.md](survey-analysis/anonymous_survey_data_codebook.md)`.
 
 To reproduce **Fig. 1**, run:
 
@@ -97,6 +97,8 @@ To reproduce **Extended Data Fig. 6**, run:
 ```bash
 python survey-analysis/textual_analysis/theory_quality_rating/fig_theory_rating_quality.py
 ```
+
+
 
 ## machine-learning-analysis
 
