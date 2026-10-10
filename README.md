@@ -5,8 +5,6 @@ Code accompanying the paper *[Artificial intelligences and human scientists exhi
 - **survey-analysis** — Analysis of the collected survey data.
 - **machine-learning-analysis** — Random Forest and logistic regression code for predicting inequality mentions in academic discourses.
 
-This code was developed and tested on macOS. For any questions about the code, please contact Ke Li ([ke.li@insead.edu](mailto:ke.li@insead.edu)).
-
 ## Setup
 
 1. Install [Python 3](https://www.python.org/downloads/) if you do not have it yet.
