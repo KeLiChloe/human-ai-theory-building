@@ -1,5 +1,6 @@
 # Shared virtualenv (repo root)
 .venv/
+docs/
 
 # Python caches (auto-regenerated; safe to delete anytime)
 **/__pycache__/
@@ -31,6 +32,9 @@ survey-analysis/textual_analysis/embedding_analysis/outputs/**/*.tex
 survey-analysis/rating_system
 # Interactive network HTML + render assets (not used by paper figure scripts)
 survey-analysis/textual_analysis/embedding_analysis/network/
+outputs/
+*.png
+*.svg
 
 # OS / editor
 .DS_Store
