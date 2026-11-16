@@ -1,18 +1,27 @@
-"""Code pre-ML SOI theories for moderation mechanisms.
+"""Code LLM-refined post-ML SOI theories for moderation mechanisms.
+
+Uses only Q *.15 LLM_refined post-ML theory (SOI). Do not use the raw
+Q *.15 post-ML theory (SOI) text.
+
+Each theory is coded against 3–6 unique unordered feature pairs. The model
+receives neutral pair IDs without source or reference-sign information. Python
+maps each coding back to the six original respondent/ML slots when saving.
 
 One API call = one respondent x one task. After each successful call the JSON
 file is replaced atomically, so an interrupted run keeps every theory already coded.
 
 Requires OPENAI_API_KEY.
 
-    python code_moderation_pre_ML.py
-    python code_moderation_pre_ML.py --limit 2
+    python3 scripts/code_moderation_post_ML.py
+    python3 scripts/code_moderation_post_ML.py --limit 2
 """
 
 from __future__ import annotations
 
 import argparse
 import csv
+from copy import deepcopy
+from collections import Counter
 import json
 import os
 import re
@@ -23,13 +32,27 @@ from pathlib import Path
 from openai import OpenAI
 from tqdm import tqdm
 
-HERE = Path(__file__).resolve().parent
-PROMPT_PATH = HERE / "moderation_coding_pre_ML.md"
-CSV_PATH = HERE / "moderation_analysis_data.csv"
-OUTPUT_PATH = HERE / "moderation_coding_pre_ML.json"
+from coding_schema import CODING_SCHEMA, validate_mechanism, add_reference_sign, normalize_legacy_reason
+
+HERE = Path(__file__).resolve().parents[1]
+PROMPT_PATH = HERE / "prompts" / "moderation_coding_post_ML.md"
+CSV_PATH = HERE / "data" / "moderation_analysis_data.csv"
+ML_PATH = HERE.parent.parent / "forecasts" / "ML_results_second_order_interactions.json"
+OUTPUT_PATH = HERE / "outputs" / "moderation_coding_post_ML_v2.json"
+
+CODING_PROTOCOL = "neutral_unique_pairs_v1"
 
 DEFAULT_MODEL = "gpt-6-astra"
 DEFAULT_REASONING_EFFORT = "xhigh"
+PAIR_IDS = (
+    "USER_SELECTED_rank_1",
+    "USER_SELECTED_rank_2",
+    "USER_SELECTED_rank_3",
+    "ML_rank_1",
+    "ML_rank_2",
+    "ML_rank_3",
+)
+N_PAIRS = len(PAIR_IDS)
 
 FEATURE_DEFINITIONS = {
     "social_science": "the paper is published in a social science journal",
@@ -50,6 +73,7 @@ FEATURE_DEFINITIONS = {
 TASKS = (
     {
         "task": "racial_inequality",
+        "ml_key": "race",
         "research_domain": "Racial inequality",
         "outcome_name": "discussing racial inequality",
         "outcome_definition": "whether a paper discusses racial inequality",
@@ -63,10 +87,11 @@ TASKS = (
             "Q Race.9 (SOI, sign, 2nd)",
             "Q Race.9 (SOI, sign, 3rd)",
         ),
-        "theory_col": "Q Race.10 pre-ML theory (SOI)",
+        "theory_col": "Q Race.15 LLM_refined post-ML theory (SOI)",
     },
     {
         "task": "gender_inequality",
+        "ml_key": "gender",
         "research_domain": "Gender inequality",
         "outcome_name": "discussing gender inequality",
         "outcome_definition": "whether a paper discusses gender inequality",
@@ -80,40 +105,61 @@ TASKS = (
             "Q Gender.9 (SOI, sign, 2nd)",
             "Q Gender.9 (SOI, sign, 3rd)",
         ),
-        "theory_col": "Q Gender.10 pre-ML theory (SOI)",
+        "theory_col": "Q Gender.15 LLM_refined post-ML theory (SOI)",
     },
 )
 
-CLASSIFICATIONS = {
-    "terminal_curvature",
-    "nonterminal_upstream_interaction",
-    "mixed_terminal",
-    "restatement_only",
-    "not_addressed",
-    "unclear",
-}
-
 PAIR_FIELDS = (
+    "discussed",
+    "no_mechanism_reason",
+    "causal_reconstruction",
     "features",
-    "predicted_sign",
-    "addressed",
+    "other_mechanism",
     "curvature",
-    "upstream_interaction",
-    "primary_classification",
-    "interaction_sign",
-    "key_evidence",
+    "interaction_based",
+    "mechanism_implied_sign",
 )
 NESTED_FIELDS = {
-    "curvature": ("present", "mechanism", "evidence"),
-    "upstream_interaction": ("present", "mechanism", "evidence"),
-    "interaction_sign": ("mechanism_implied_sign", "consistent_with_predicted_sign"),
+    "causal_reconstruction": ("summary", "structure"),
+    "curvature": ("present", "coding_rationale", "evidence"),
+    "other_mechanism": ("present", "coding_rationale", "evidence", "outside_framework_reason"),
+    "interaction_based": ("present", "interaction_location", "coding_rationale", "evidence"),
 }
-
 
 def load_prompt_template() -> str:
     text = PROMPT_PATH.read_text(encoding="utf-8")
     text = re.sub(r"\A<!--.*?-->\s*", "", text, count=1, flags=re.DOTALL)
     return text.strip() + "\n"
+
+
+def load_ml_top3() -> dict[str, list[dict[str, object]]]:
+    data = json.loads(ML_PATH.read_text(encoding="utf-8"))
+    out: dict[str, list[dict[str, object]]] = {}
+    for task in TASKS:
+        rows = sorted(data[task["ml_key"]], key=lambda row: int(row["rank"]))
+        if len(rows) < 3:
+            raise ValueError(f"{ML_PATH.name} {task['ml_key']} needs at least 3 pairs")
+        pairs = []
+        for row in rows[:3]:
+            feature_a = row["feature_1"]
+            feature_b = row["feature_2"]
+            sign = str(row["sign"]).strip()
+            ml_rank = int(row["rank"])
+            if feature_a not in FEATURE_DEFINITIONS or feature_b not in FEATURE_DEFINITIONS:
+                raise ValueError(f"Unknown ML feature in {task['ml_key']}: {feature_a}, {feature_b}")
+            if sign not in {"+", "-"}:
+                raise ValueError(f"Bad ML sign for {task['ml_key']} rank {ml_rank}: {sign!r}")
+            pairs.append({
+                "ml_rank": ml_rank,
+                "feature_a": feature_a,
+                "feature_b": feature_b,
+                "ml_sign": sign,
+            })
+        got_ranks = [int(pair["ml_rank"]) for pair in pairs]
+        if got_ranks != [1, 2, 3]:
+            raise ValueError(f"{ML_PATH.name} {task['ml_key']} ranks must be 1..3, got {got_ranks}")
+        out[task["task"]] = pairs
+    return out
 
 
 def required_columns() -> list[str]:
@@ -150,31 +196,57 @@ def parse_pair(cell: str) -> tuple[str, str]:
     return parts[0], parts[1]
 
 
-def fill_prompt(template: str, task: dict, pairs: list[dict[str, str]], theory: str) -> str:
+def unique_pairs_for_model(slots: list[dict[str, object]]) -> list[dict[str, object]]:
+    """Remove duplicates and provenance; sort features so IDs do not encode source order."""
+    keys = sorted({tuple(sorted((str(p["feature_a"]), str(p["feature_b"])))) for p in slots})
+    if not 3 <= len(keys) <= 6:
+        raise ValueError(f"Expected 3–6 unique feature pairs, got {len(keys)}")
+    return [
+        {"pair_id": f"pair_{i}", "feature_a": a, "feature_b": b}
+        for i, (a, b) in enumerate(keys, start=1)
+    ]
+
+
+def fill_prompt(
+    template: str,
+    task: dict,
+    pairs_to_code: list[dict[str, object]],
+    theory: str,
+) -> str:
+    model_pairs = unique_pairs_for_model(pairs_to_code)
     values = {
         "RESEARCH_DOMAIN": task["research_domain"],
         "OUTCOME_NAME": task["outcome_name"],
         "OUTCOME_DEFINITION": task["outcome_definition"],
         "THEORY_TEXT": theory,
     }
-    for pair in pairs:
-        rank = pair["rank"]
-        values[f"PAIR_{rank}_FEATURE_A"] = pair["feature_a"]
-        values[f"PAIR_{rank}_FEATURE_B"] = pair["feature_b"]
-        values[f"PAIR_{rank}_FEATURE_A_DEFINITION"] = FEATURE_DEFINITIONS[pair["feature_a"]]
-        values[f"PAIR_{rank}_FEATURE_B_DEFINITION"] = FEATURE_DEFINITIONS[pair["feature_b"]]
-        values[f"PAIR_{rank}_SIGN"] = pair["predicted_sign"]
+
+    for i, pair in enumerate(model_pairs, start=1):
+        feature_a, feature_b = str(pair["feature_a"]), str(pair["feature_b"])
+        values[f"PAIR_{i}_FEATURE_A"] = feature_a
+        values[f"PAIR_{i}_FEATURE_B"] = feature_b
+        values[f"PAIR_{i}_FEATURE_A_DEFINITION"] = FEATURE_DEFINITIONS[feature_a]
+        values[f"PAIR_{i}_FEATURE_B_DEFINITION"] = FEATURE_DEFINITIONS[feature_b]
+
+    # Render optional pairs before substituting values, never interpreting theory text as template code.
+    def optional_pair(match: re.Match[str]) -> str:
+        return match.group(2) if int(match.group(1)) <= len(model_pairs) else ""
+
+    template = re.sub(
+        r"\{\{#PAIR_([4-6])\}\}\n(.*?)\n\{\{/PAIR_\1\}\}",
+        optional_pair, template, flags=re.DOTALL,
+    )
+
     def replace(match: re.Match[str]) -> str:
         key = match.group(1)
         if key not in values:
             raise ValueError(f"Unfilled placeholder: {key}")
         return values[key]
 
-    # One pass, so text inserted from the theory cannot be replaced again.
     return re.sub(r"\{\{([A-Z0-9_]+)\}\}", replace, template)
 
 
-def row_pairs(row: dict[str, str], task: dict) -> list[dict[str, str]]:
+def row_user_pairs(row: dict[str, str], task: dict) -> list[dict[str, object]]:
     pairs = []
     for rank, (pair_col, sign_col) in enumerate(zip(task["pair_cols"], task["sign_cols"]), start=1):
         feature_a, feature_b = parse_pair(row[pair_col])
@@ -182,12 +254,50 @@ def row_pairs(row: dict[str, str], task: dict) -> list[dict[str, str]]:
         if sign not in {"+", "-"}:
             raise ValueError(f"{row['Participant ID'].strip()} {task['task']} rank {rank}: sign {sign!r}")
         pairs.append({
-            "rank": rank,
+            "user_rank": rank,
             "feature_a": feature_a,
             "feature_b": feature_b,
             "predicted_sign": sign,
         })
     return pairs
+
+
+def build_pairs_to_code(
+    user_pairs: list[dict[str, object]],
+    ml_pairs: list[dict[str, object]],
+) -> list[dict[str, object]]:
+    """Always 6 pairs: USER_SELECTED_rank_1–3, then ML_rank_1–3. Keep duplicates."""
+    if len(user_pairs) != 3 or len(ml_pairs) != 3:
+        raise ValueError("Need exactly 3 user pairs and 3 ML pairs")
+    pairs_to_code: list[dict[str, object]] = []
+    for pair in user_pairs:
+        user_rank = int(pair["user_rank"])
+        pairs_to_code.append({
+            "pair_id": f"USER_SELECTED_rank_{user_rank}",
+            "feature_a": pair["feature_a"],
+            "feature_b": pair["feature_b"],
+            "source": "user_selected",
+            "user_rank": user_rank,
+            "ml_rank": None,
+            "user_predicted_sign": pair["predicted_sign"],
+            "ml_sign": None,
+        })
+    for pair in ml_pairs:
+        ml_rank = int(pair["ml_rank"])
+        pairs_to_code.append({
+            "pair_id": f"ML_rank_{ml_rank}",
+            "feature_a": pair["feature_a"],
+            "feature_b": pair["feature_b"],
+            "source": "ml_selected",
+            "user_rank": None,
+            "ml_rank": ml_rank,
+            "user_predicted_sign": None,
+            "ml_sign": pair["ml_sign"],
+        })
+    got_ids = [str(pair["pair_id"]) for pair in pairs_to_code]
+    if got_ids != list(PAIR_IDS):
+        raise ValueError(f"Expected pair_ids {list(PAIR_IDS)}, got {got_ids}")
+    return pairs_to_code
 
 
 def load_output(path: Path, model: str, reasoning_effort: str) -> dict:
@@ -197,18 +307,36 @@ def load_output(path: Path, model: str, reasoning_effort: str) -> dict:
             raise ValueError(f"{path} must be a JSON object with a records list")
         stored_model = data.get("model")
         stored_effort = data.get("reasoning_effort")
+        stored_schema = data.get("coding_schema")
+        if stored_schema and stored_schema != CODING_SCHEMA:
+            raise ValueError(
+                f"{path.name} has coding_schema={stored_schema!r}, but this script "
+                f"writes {CODING_SCHEMA!r}. Rename/move the old file or pass --output."
+            )
+        if data.get("records") and not stored_schema:
+            raise ValueError(
+                f"{path.name} looks like an older run (no coding_schema). "
+                f"Rename/move it or pass --output for the {CODING_SCHEMA} recode."
+            )
         if stored_model != model or stored_effort != reasoning_effort:
             raise ValueError(
                 f"{path.name} was started with model={stored_model!r}, "
                 f"reasoning_effort={stored_effort!r}. This run is model={model!r}, "
                 f"reasoning_effort={reasoning_effort!r}. Use the same settings, or pass a new --output."
             )
+        if data.get("records") and data.get("coding_protocol") != CODING_PROTOCOL:
+            raise ValueError("Post coding protocol changed: use a new --output file for neutral, deduplicated coding")
+        data["coding_protocol"] = CODING_PROTOCOL
+        normalize_legacy_reason(data)
         return data
     return {
         "model": model,
         "reasoning_effort": reasoning_effort,
+        "coding_schema": CODING_SCHEMA,
         "prompt_file": PROMPT_PATH.name,
         "source_csv": CSV_PATH.name,
+        "ml_file": ML_PATH.name,
+        "coding_protocol": CODING_PROTOCOL,
         "records": [],
     }
 
@@ -218,25 +346,32 @@ def completed_keys(data: dict) -> set[tuple[str, str]]:
     for record in data["records"]:
         if record.get("coding") is None:
             continue
+        if record.get("coding_schema", data.get("coding_schema")) != CODING_SCHEMA:
+            continue
         done.add((record["participant_id"], record["task"]))
     return done
 
 
 def save_output(path: Path, data: dict) -> None:
+    # The schema applies to the entire file; records do not repeat it.
+    for record in data["records"]:
+        if record.get("coding_schema", CODING_SCHEMA) != CODING_SCHEMA:
+            raise ValueError("Record schema conflicts with the file schema")
+        record.pop("coding_schema", None)
     path.parent.mkdir(parents=True, exist_ok=True)
+    data["coding_schema"] = CODING_SCHEMA
     tmp = path.with_suffix(path.suffix + ".tmp")
     tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     tmp.replace(path)
 
 
-def coerce_rank(value: object) -> int:
-    if isinstance(value, bool):
-        raise ValueError(f"Bad rank: {value!r}")
-    if isinstance(value, int):
-        return value
-    if isinstance(value, str) and value.strip().isdigit():
-        return int(value.strip())
-    raise ValueError(f"Bad rank: {value!r}")
+def normalize_pair_id(value: object) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"Bad pair_id: {value!r}")
+    pair_id = value.strip()
+    if not re.fullmatch(r"pair_[1-6]", pair_id):
+        raise ValueError(f"Unknown model pair_id: {pair_id!r}")
+    return pair_id
 
 
 def require_fields(obj: object, fields: tuple[str, ...], label: str) -> dict:
@@ -248,7 +383,7 @@ def require_fields(obj: object, fields: tuple[str, ...], label: str) -> dict:
     return obj
 
 
-def extract_json(text: str, expected_pairs: list[dict[str, str]]) -> dict:
+def extract_json(text: str, expected_pairs: list[dict[str, object]]) -> dict:
     raw = text.strip()
     if raw.startswith("```"):
         fenced = re.search(r"\A```(?:json)?\s*(.*?)```\s*\Z", raw, flags=re.DOTALL)
@@ -258,47 +393,60 @@ def extract_json(text: str, expected_pairs: list[dict[str, str]]) -> dict:
     parsed = json.loads(raw)
     if not isinstance(parsed, dict):
         raise ValueError("Model output is not a JSON object")
-    reconstruction = require_fields(
-        parsed.get("causal_reconstruction"),
-        ("summary", "structure"),
-        "causal_reconstruction",
-    )
-    if not isinstance(reconstruction["structure"], list):
-        raise ValueError("causal_reconstruction.structure must be a list")
-    if "confidence" not in parsed:
-        raise ValueError("Model output is missing confidence")
+    if parsed.get("confidence") not in {"high", "medium", "low"}:
+        raise ValueError("confidence must be high, medium or low")
+    unique_pairs = unique_pairs_for_model(expected_pairs)
+    expected_ids = [str(pair["pair_id"]) for pair in unique_pairs]
     pairs = parsed.get("pairs")
-    if not isinstance(pairs, list) or len(pairs) != 3:
-        raise ValueError("Model output must contain exactly three pairs")
-    normalized = []
+    if not isinstance(pairs, list) or len(pairs) != len(unique_pairs):
+        raise ValueError(f"Model output must contain exactly {len(unique_pairs)} unique pairs")
+    by_id: dict[str, dict] = {}
     for pair in pairs:
-        pair = require_fields(pair, ("rank",) + PAIR_FIELDS, "pair")
-        pair["rank"] = coerce_rank(pair["rank"])
+        pair = require_fields(pair, ("pair_id",) + PAIR_FIELDS, "pair")
+        pair_id = normalize_pair_id(pair["pair_id"])
+        if pair_id in by_id:
+            raise ValueError(f"Duplicate pair_id: {pair_id}")
+        pair["pair_id"] = pair_id
         features = pair["features"]
         if not isinstance(features, list) or len(features) != 2 or not all(isinstance(item, str) for item in features):
-            raise ValueError(f"Rank {pair['rank']} features must be two strings")
-        if not isinstance(pair["key_evidence"], list):
-            raise ValueError(f"Rank {pair['rank']} key_evidence must be a list")
+            raise ValueError(f"{pair_id} features must be two strings")
+        pair.pop("key_evidence", None)
         for name, fields in NESTED_FIELDS.items():
-            require_fields(pair[name], fields, f"rank {pair['rank']} {name}")
-        label = pair["primary_classification"]
-        if label not in CLASSIFICATIONS:
-            raise ValueError(f"Unknown primary_classification: {label!r}")
+            require_fields(pair[name], fields, f"{pair_id} {name}")
+        validate_mechanism(pair)
+        by_id[pair_id] = pair
+    unexpected_ids = sorted(set(by_id) - set(expected_ids))
+    if unexpected_ids:
+        raise ValueError(f"Unexpected model pair_id(s): {unexpected_ids}")
+    missing_ids = [pair_id for pair_id in expected_ids if pair_id not in by_id]
+    if missing_ids:
+        raise ValueError(f"Missing pair_id(s): {missing_ids}")
+    # Validate each neutral ID against the actual features before expanding slots.
+    by_features = {}
+    for expected in unique_pairs:
+        pair = by_id[str(expected["pair_id"])]
+        key = tuple(sorted((str(expected["feature_a"]), str(expected["feature_b"]))))
+        if tuple(sorted(pair["features"])) != key:
+            raise ValueError(f"{expected['pair_id']} features do not match the submitted pair")
+        by_features[key] = pair
+    normalized = []
+    for expected in expected_pairs:
+        key = tuple(sorted((str(expected["feature_a"]), str(expected["feature_b"]))))
+        pair = deepcopy(by_features[key])
+        pair["pair_id"] = str(expected["pair_id"])
+        pair["features"] = [expected["feature_a"], expected["feature_b"]]
+        source = str(expected["source"])
+        if source == "user_selected":
+            reference_sign = expected["user_predicted_sign"]
+        elif source == "ml_selected":
+            reference_sign = expected["ml_sign"]
+        else:
+            raise ValueError(f"{expected['pair_id']} has unknown source {source!r}")
+        add_reference_sign(pair, reference_sign)
+        pair["source"] = source
+        pair["user_rank"] = expected["user_rank"]
+        pair["ml_rank"] = expected["ml_rank"]
         normalized.append(pair)
-    normalized.sort(key=lambda pair: pair["rank"])
-    ranks = [pair["rank"] for pair in normalized]
-    if ranks != [1, 2, 3]:
-        raise ValueError(f"Pair ranks must be [1, 2, 3], got {ranks}")
-    for pair, expected in zip(normalized, expected_pairs):
-        got = set(pair["features"])
-        wanted = {expected["feature_a"], expected["feature_b"]}
-        if got != wanted:
-            raise ValueError(f"Rank {pair['rank']} features {sorted(got)} != {sorted(wanted)}")
-        if pair["predicted_sign"] != expected["predicted_sign"]:
-            raise ValueError(
-                f"Rank {pair['rank']} predicted_sign {pair['predicted_sign']!r} "
-                f"!= {expected['predicted_sign']!r}"
-            )
     parsed["pairs"] = normalized
     return parsed
 
@@ -319,7 +467,7 @@ def call_model(client: OpenAI, prompt: str, model: str, reasoning_effort: str) -
 def code_one(
     client: OpenAI,
     prompt: str,
-    expected_pairs: list[dict[str, str]],
+    expected_pairs: list[dict[str, object]],
     model: str,
     reasoning_effort: str,
     attempts: int,
@@ -338,7 +486,12 @@ def code_one(
     raise last_error
 
 
-def build_jobs(rows: list[dict[str, str]], tasks: list[dict], template: str) -> list[dict]:
+def build_jobs(
+    rows: list[dict[str, str]],
+    tasks: list[dict],
+    template: str,
+    ml_by_task: dict[str, list[dict[str, object]]],
+) -> list[dict]:
     jobs = []
     for row in rows:
         participant_id = row["Participant ID"].strip()
@@ -349,14 +502,19 @@ def build_jobs(rows: list[dict[str, str]], tasks: list[dict], template: str) -> 
             theory = row[task["theory_col"]].strip()
             if not theory:
                 raise ValueError(f"{participant_id} {task['task']}: empty theory")
-            pairs = row_pairs(row, task)
+            user_pairs = row_user_pairs(row, task)
+            ml_pairs = ml_by_task[task["task"]]
+            pairs_to_code = build_pairs_to_code(user_pairs, ml_pairs)
             jobs.append({
                 "participant_id": participant_id,
                 "group_code": group_code,
                 "task": task,
-                "pairs": pairs,
+                "user_pairs": user_pairs,
+                "ml_pairs": ml_pairs,
+                "pairs_to_code": pairs_to_code,
+                "model_pairs": unique_pairs_for_model(pairs_to_code),
                 "theory": theory,
-                "prompt": fill_prompt(template, task, pairs, theory),
+                "prompt": fill_prompt(template, task, pairs_to_code, theory),
             })
     return jobs
 
@@ -369,12 +527,30 @@ def main() -> None:
     parser.add_argument("--limit", type=int, default=None, help="Code at most this many theories")
     parser.add_argument("--attempts", type=int, default=3)
     parser.add_argument("--task", choices=["both", "racial_inequality", "gender_inequality"], default="both")
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Build jobs and print a sample without calling the API",
+    )
     args = parser.parse_args()
 
     template = load_prompt_template()
     rows = load_rows()
+    ml_by_task = load_ml_top3()
     tasks = [task for task in TASKS if args.task == "both" or task["task"] == args.task]
-    jobs = build_jobs(rows, tasks, template)
+    jobs = build_jobs(rows, tasks, template, ml_by_task)
+
+    counts = Counter(len(job["model_pairs"]) for job in jobs)
+    print(f"Jobs: {len(jobs)}; unique pairs sent to AI (3–6): {dict(sorted(counts.items()))}")
+
+    if args.dry_run:
+        sample = jobs[0]
+        print(f"Sample {sample['participant_id']} / {sample['task']['task']}: "
+              f"{len(sample['model_pairs'])} unique pairs; {N_PAIRS} saved slots")
+        for pair in sample["model_pairs"]:
+            print(f"  {pair['pair_id']}: {pair['feature_a']} × {pair['feature_b']}")
+        return
+
     output = load_output(args.output, args.model, args.reasoning_effort)
     done = completed_keys(output)
     pending = [
@@ -382,7 +558,7 @@ def main() -> None:
         if (job["participant_id"], job["task"]["task"]) not in done
     ]
     if args.limit is not None:
-        pending = pending[:args.limit]
+        pending = pending[: args.limit]
     print(f"Already coded: {len(done)}. This run: {len(pending)}.")
     if not pending:
         print(f"Done. {args.output} has {len(output['records'])} records.")
@@ -401,7 +577,7 @@ def main() -> None:
                 coding = code_one(
                     client,
                     job["prompt"],
-                    job["pairs"],
+                    job["pairs_to_code"],
                     args.model,
                     args.reasoning_effort,
                     args.attempts,
@@ -418,7 +594,6 @@ def main() -> None:
                 "research_domain": task["research_domain"],
                 "outcome_name": task["outcome_name"],
                 "outcome_definition": task["outcome_definition"],
-                "pairs_submitted": job["pairs"],
                 "theory_text": job["theory"],
                 "model": args.model,
                 "reasoning_effort": args.reasoning_effort,
@@ -430,7 +605,9 @@ def main() -> None:
     print(f"Done. {args.output} has {len(output['records'])} records.")
     if failures:
         listed = "\n".join(f"  {label}" for label in failures)
-        raise SystemExit(f"{len(failures)} theories failed and were not saved. Rerun to retry them:\n{listed}")
+        raise SystemExit(
+            f"{len(failures)} theories failed and were not saved. Rerun to retry them:\n{listed}"
+        )
 
 
 if __name__ == "__main__":
