@@ -56,13 +56,13 @@ JOINT_ORDER = (
     "other_only", "curvature_other", "interaction_other", "all_three",
 )
 JOINT_LABEL = {
-    "no_mechanism": "No coded mechanism",
-    "interaction_only": "Interaction-based only",
+    "no_mechanism": "No explicit mechanism",
+    "interaction_only": "Interaction only",
     "curvature_only": "Curvature only",
     "curvature_interaction": "Curvature + interaction",
-    "other_only": "Other only",
-    "curvature_other": "Curvature + other",
-    "interaction_other": "Interaction + other",
+    "other_only": "Other mechanism only",
+    "curvature_other": "Curvature + other mechanism",
+    "interaction_other": "Interaction + other mechanism",
     "all_three": "All three mechanisms",
 }
 PRESENCE_ORDER = ("curvature", "interaction_based", "other_mechanism", "no_mechanism")
@@ -71,8 +71,8 @@ PRESENCE_LABEL = {
     "other_mechanism": "Other mechanism", "no_mechanism": "No mechanism",
 }
 PRESENCE_COLORS = {
-    "curvature": "#A8D5A2", "interaction_based": "#F2C14E",
-    "other_mechanism": "#F2BACB", "no_mechanism": "#C5CED6",
+    "curvature": "#F2C14E", "interaction_based": "#B3D3EC",
+    "other_mechanism": "#A8D5A2", "no_mechanism": "#E5E7EB",
 }
 
 GROUP_ORDER = ("PhD Students", "Senior Scientists", "GenAI")
@@ -236,7 +236,7 @@ def plot_presence(rows: list[dict[str, object]]) -> None:
                 x + offset, values, width=width,
                 color=[PRESENCE_COLORS[key] for key in PRESENCE_ORDER],
                 edgecolor=BAR_EDGE_COLOR, linewidth=BAR_EDGE_WIDTH,
-                alpha=BAR_ALPHA, hatch=PHASE_HATCH[phase], zorder=3,
+                alpha=1.0, hatch=PHASE_HATCH[phase], zorder=3,
             )
             for bar, value in zip(bars, values):
                 if np.isfinite(value):
@@ -272,44 +272,62 @@ def plot_presence(rows: list[dict[str, object]]) -> None:
 def plot_stacked(rows: list[dict[str, object]], out_path: Path) -> None:
     """Eight exclusive combinations; each group/phase sums to 100%."""
     apply_plot_style()
-    order = ("no_mechanism", "other_only", "interaction_only", "interaction_other",
-             "curvature_only", "curvature_interaction", "curvature_other", "all_three")
+    top_to_bottom = ("all_three", "curvature_only", "curvature_interaction",
+                     "curvature_other", "interaction_only", "interaction_other",
+                     "other_only", "no_mechanism")
+    # Matplotlib builds stacked bars from the bottom upward.
+    order = tuple(reversed(top_to_bottom))
     colors = {
-        "no_mechanism": "#C5CED6", "other_only": "#F2BACB",
-        "interaction_only": "#F2C14E", "interaction_other": "#E99B70",
-        "curvature_only": "#A8D5A2", "curvature_interaction": "#8AA8CB",
-        "curvature_other": "#C4A1D6", "all_three": "#7F6A99",
+        "no_mechanism": "#E5E7EB", "other_only": "#A8D5A2",
+        "interaction_only": "#B3D3EC", "interaction_other": "#B9B0D2",
+        "curvature_only": "#F2C14E", "curvature_interaction": "#E5A04B",
+        "curvature_other": "#F2BD94", "all_three": "#D88965",
     }
     lookup = {(r["group"], r["phase"], r["joint_type"]): r for r in rows}
-    fig, axes = plt.subplots(1, 3, figsize=(12, 7), sharey=True)
+    fig, axes = plt.subplots(1, 3, figsize=(14, 9.5), sharey=True)
     for ax, group in zip(axes, GROUP_ORDER):
         bottoms = np.zeros(2)
         for key in order:
             values = np.array([lookup[(group, phase, key)]["percentage"] for phase in PHASE_ORDER])
             ax.bar([0, 1], values, bottom=bottoms, width=0.62, color=colors[key],
-                   edgecolor="white", linewidth=0.8, alpha=BAR_ALPHA, zorder=3)
+                   edgecolor="white", linewidth=0.8, alpha=1.0, zorder=3)
             for i, value in enumerate(values):
                 if np.isfinite(value) and value >= 4:
-                    ax.text(i, bottoms[i]+value/2, f"{value:.0f}%", ha="center", va="center", fontsize=12)
+                    ax.text(i, bottoms[i]+value/2, f"{value:.0f}%", ha="center", va="center",
+                            fontsize=18, color="#26313C")
+                elif np.isfinite(value) and value >= 3:
+                    ax.text(i, bottoms[i] + value / 2, f"{value:.1f}%",
+                            ha="center", va="center", fontsize=14, color="#26313C")
             bottoms += values
-        labels = [f"{PHASE_LABEL[phase]}\n(n={lookup[(group, phase, order[0])]['n_pairs']})" for phase in PHASE_ORDER]
-        ax.set_xticks([0, 1], labels, fontsize=12)
-        ax.set_xlim(-0.65, 1.65)
+        ax.set_xticks([0, 1], [PHASE_LABEL[phase] for phase in PHASE_ORDER],
+                      fontsize=18, fontweight="bold", color="black")
+        pre_n = lookup[(group, "pre", order[0])]["n_pairs"]
+        post_n = lookup[(group, "post", order[0])]["n_pairs"]
+        ax.text(0.5, 1.025, f"Theory–pair units\nPre = {pre_n}; Post = {post_n}",
+                transform=ax.transAxes, ha="center", va="bottom",
+                fontsize=13, color="#657080", linespacing=1.3)
+        ax.set_xlim(-0.75, 1.75)
         ax.set_ylim(0, 100)
-        ax.set_yticks(np.arange(0, 101, 20))
-        ax.set_title(group, fontsize=16, pad=14, fontweight="bold")
+        ax.set_yticks([])
+        ax.set_title(group, fontsize=21, pad=62, fontweight="bold", color="#26313C")
         ax.set_axisbelow(True)
-        ax.grid(axis="y", alpha=0.25)
-        ax.spines[["top", "right"]].set_visible(False)
-    axes[0].set_ylabel("Percentage of discussed theory–pair units", fontsize=12)
-    handles = [mpatches.Patch(facecolor=colors[key], label=JOINT_LABEL[key]) for key in order]
-    fig.legend(handles=handles, loc="upper center", bbox_to_anchor=(0.5, 0.93), ncol=4,
-               frameon=False, fontsize=10.5, columnspacing=1.4)
-    fig.suptitle("Mechanism combinations before and after ML", fontsize=20, y=0.99)
-    fig.text(0.5, 0.025, "Exclusive combinations sum to 100%; segments below 4% are not labeled.\n"
-             "Undiscussed pairs excluded; post-ML pairs deduplicated within each theory.",
-             ha="center", fontsize=10, color="#444444")
-    fig.subplots_adjust(left=0.075, right=0.985, top=0.76, bottom=0.16, wspace=0.14)
+        ax.grid(axis="y", color="#E7EBEF", linewidth=0.7)
+        ax.spines[["top", "right", "left"]].set_visible(False)
+        ax.spines["bottom"].set_color("#CED5DC")
+        ax.spines["bottom"].set_linewidth(0.8)
+        ax.tick_params(axis="both", length=0, pad=9, colors="black")
+    legend_order = tuple(key for key in top_to_bottom
+                         if key != "all_three" or any(
+                             r["joint_type"] == key and r["count"] > 0 for r in rows))
+    handles = [mpatches.Patch(facecolor=colors[key], label=JOINT_LABEL[key]) for key in legend_order]
+    legend = fig.legend(handles=handles, loc="upper left", bbox_to_anchor=(0.79, 0.80), ncol=1,
+                        frameon=False, fontsize=18, labelspacing=1.1,
+                        handlelength=1.5, handleheight=1.0, handletextpad=0.8,
+                        title="Explanation type", title_fontsize=20, borderaxespad=0)
+    legend.get_title().set_fontweight("bold")
+    fig.suptitle("How Humans and AI Explain Interactions:\nBefore and After ML Feedback", fontsize=28,
+                 fontweight="bold", color="#26313C", x=0.415, y=1.055)
+    fig.subplots_adjust(left=0.065, right=0.765, top=0.80, bottom=0.16, wspace=0.08)
     save_svg(fig, out_path)
     plt.close(fig)
 

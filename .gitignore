@@ -32,6 +32,8 @@ survey-analysis/textual_analysis/embedding_analysis/outputs/**/*.tex
 survey-analysis/rating_system
 # Interactive network HTML + render assets (not used by paper figure scripts)
 survey-analysis/textual_analysis/embedding_analysis/network/
+survey-analysis/textual_analysis/moderation_analysis
+survey-analysis/textual_analysis/moderation_analysis_new
 outputs/
 *.png
 *.svg
