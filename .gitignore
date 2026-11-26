@@ -38,6 +38,8 @@ outputs/
 *.png
 *.svg
 
+strategic_management/*
+
 # OS / editor
 .DS_Store
 .idea/
